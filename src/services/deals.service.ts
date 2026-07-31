@@ -1,91 +1,101 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "./api-client";
 import { Deal, DealFormData, DealStage } from "@/types/deal";
-import { RealtimeChannel } from "@supabase/supabase-js";
 
-export async function fetchDeals(): Promise<Deal[]> {
-  const { data, error } = await supabase
-    .from("deals")
-    .select("*")
-    .order("updated_at", { ascending: false });
-
-  if (error) throw error;
-  return (data as Deal[]) || [];
+interface ApiDeal {
+  id: string;
+  userId: string;
+  propertyId: string | null;
+  title: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  askingPrice: number | null;
+  offerPrice: number | null;
+  arv: number | null;
+  rehabEstimate: number | null;
+  expectedProfit: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  source: string | null;
+  stage: DealStage;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export async function addDeal(userId: string, data: Partial<DealFormData>): Promise<Deal> {
-  const insertData = {
-    title: data.title || "",
-    address: data.address || null,
-    city: data.city || null,
-    state: data.state || null,
-    asking_price: data.asking_price || null,
-    offer_price: data.offer_price || null,
-    arv: data.arv || null,
-    rehab_estimate: data.rehab_estimate || null,
-    expected_profit: data.expected_profit || null,
-    stage: data.stage || "lead",
-    source: data.source || null,
-    contact_name: data.contact_name || null,
-    contact_phone: data.contact_phone || null,
-    contact_email: data.contact_email || null,
-    notes: data.notes || null,
-    user_id: userId,
+function fromApi(row: ApiDeal): Deal {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    property_id: row.propertyId,
+    title: row.title,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    asking_price: row.askingPrice,
+    offer_price: row.offerPrice,
+    arv: row.arv,
+    rehab_estimate: row.rehabEstimate,
+    expected_profit: row.expectedProfit,
+    stage: row.stage,
+    source: row.source,
+    contact_name: row.contactName,
+    contact_phone: row.contactPhone,
+    contact_email: row.contactEmail,
+    notes: row.notes,
+    created_at: row.createdAt,
+    updated_at: row.updatedAt,
   };
+}
 
-  const { data: newDeal, error } = await supabase
-    .from("deals")
-    .insert(insertData)
-    .select()
-    .single();
+const FIELD_MAP: Record<keyof DealFormData, string> = {
+  title: "title",
+  address: "address",
+  city: "city",
+  state: "state",
+  asking_price: "askingPrice",
+  offer_price: "offerPrice",
+  arv: "arv",
+  rehab_estimate: "rehabEstimate",
+  expected_profit: "expectedProfit",
+  stage: "stage",
+  source: "source",
+  contact_name: "contactName",
+  contact_phone: "contactPhone",
+  contact_email: "contactEmail",
+  notes: "notes",
+};
 
-  if (error) throw error;
-  return newDeal as Deal;
+function toApiPayload(formData: Partial<DealFormData>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(formData) as [keyof DealFormData, unknown][]) {
+    const apiKey = FIELD_MAP[key];
+    if (!apiKey) continue;
+    payload[apiKey] = value === "" ? null : value;
+  }
+  return payload;
+}
+
+export async function fetchDeals(): Promise<Deal[]> {
+  const rows = await api.get<ApiDeal[]>("/deals");
+  return rows.map(fromApi);
+}
+
+export async function addDeal(data: Partial<DealFormData>): Promise<Deal> {
+  const row = await api.post<ApiDeal>("/deals", toApiPayload(data));
+  return fromApi(row);
 }
 
 export async function updateDeal(id: string, data: Partial<DealFormData>): Promise<Deal> {
-  const { data: updatedDeal, error } = await supabase
-    .from("deals")
-    .update(data)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return updatedDeal as Deal;
+  const row = await api.patch<ApiDeal>(`/deals/${id}`, toApiPayload(data));
+  return fromApi(row);
 }
 
 export async function updateDealStage(id: string, stage: DealStage): Promise<void> {
-  const { error } = await supabase.from("deals").update({ stage }).eq("id", id);
-  if (error) throw error;
+  await api.patch(`/deals/${id}`, { stage });
 }
 
 export async function deleteDeal(id: string): Promise<void> {
-  const { error } = await supabase.from("deals").delete().eq("id", id);
-  if (error) throw error;
-}
-
-export function subscribeToDeals(
-  channelName: string,
-  handlers: {
-    onInsert: (row: Deal) => void;
-    onUpdate: (row: Deal) => void;
-    onDelete: (id: string) => void;
-  },
-): RealtimeChannel {
-  return supabase
-    .channel(channelName)
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "deals" },
-      (payload) => {
-        if (payload.eventType === "INSERT") handlers.onInsert(payload.new as Deal);
-        else if (payload.eventType === "UPDATE") handlers.onUpdate(payload.new as Deal);
-        else if (payload.eventType === "DELETE") handlers.onDelete(payload.old.id as string);
-      },
-    )
-    .subscribe();
-}
-
-export function unsubscribe(channel: RealtimeChannel): void {
-  supabase.removeChannel(channel);
+  await api.delete(`/deals/${id}`);
 }

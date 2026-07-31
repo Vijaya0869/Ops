@@ -98,10 +98,9 @@ const AuthPage = () => {
     if (!validateForm(true)) return;
 
     setIsLoading(true);
-    const redirectUrl = `${window.location.origin}/home`;
 
     try {
-      await authService.signUp(email, password, fullName, redirectUrl);
+      await authService.signUp(email, password, fullName);
       toast.success("Account created successfully!");
     } catch (error) {
       const message = getErrorMessage(error);
@@ -116,10 +115,9 @@ const AuthPage = () => {
 
   const handleGoogleLogin = async () => {
     setSocialLoading('google');
-    const redirectUrl = `${window.location.origin}/home`;
 
     try {
-      await authService.signInWithGoogle(redirectUrl);
+      await authService.signInWithGoogle();
     } catch (error) {
       toast.error(`Failed to sign in with Google: ${getErrorMessage(error)}`);
       setSocialLoading(null);

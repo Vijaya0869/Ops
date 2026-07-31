@@ -32,11 +32,11 @@ export default function ProfilePage() {
 
     setLoading(true);
     try {
-      const data = await profilesService.fetchProfile(user.id);
+      const data = await profilesService.fetchProfile();
       if (data) {
         setProfile(data);
-        setFullName(data.full_name || "");
-        setCompanyName(data.company_name || "");
+        setFullName(data.fullName || "");
+        setCompanyName(data.companyName || "");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -64,8 +64,7 @@ export default function ProfilePage() {
     setUploadingAvatar(true);
 
     try {
-      const avatarUrl = await profilesService.uploadAvatar(user.id, file);
-      await profilesService.upsertProfile(user.id, !!profile, { avatar_url: avatarUrl });
+      await profilesService.uploadAvatar(file);
 
       toast.success("Avatar updated successfully");
       fetchProfile();
@@ -86,7 +85,7 @@ export default function ProfilePage() {
     setSaving(true);
 
     try {
-      await profilesService.upsertProfile(user.id, !!profile, {
+      await profilesService.upsertProfile({
         full_name: fullName || null,
         company_name: companyName || null,
       });
@@ -147,7 +146,7 @@ export default function ProfilePage() {
                 <CardContent className="flex items-center gap-6">
                   <div className="relative group">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarImage src={profile?.avatarUrl || undefined} />
                       <AvatarFallback className="text-xl gold-gradient text-accent-foreground">
                         {getInitials()}
                       </AvatarFallback>
@@ -218,7 +217,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-medium text-foreground">Member since</p>
                       <p className="text-sm text-muted-foreground">
-                        {user?.created_at ? formatDate(user.created_at) : "Unknown"}
+                        {user?.createdAt ? formatDate(user.createdAt) : "Unknown"}
                       </p>
                     </div>
                   </div>
@@ -226,9 +225,7 @@ export default function ProfilePage() {
                     <User className="h-5 w-5 text-accent" />
                     <div>
                       <p className="text-sm font-medium text-foreground">Auth Provider</p>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {user?.app_metadata?.provider || "email"}
-                      </p>
+                      <p className="text-sm text-muted-foreground">Email</p>
                     </div>
                   </div>
                 </CardContent>

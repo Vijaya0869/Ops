@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import * as photosService from "@/services/property-photos.service";
-import { getCurrentUser } from "@/services/auth.service";
 import type { PropertyPhoto } from "@/services/property-photos.service";
 
 export type { PropertyPhoto };
@@ -35,10 +34,7 @@ export function usePropertyPhotos(propertyId: string | null) {
 
     setIsUploading(true);
     try {
-      const user = await getCurrentUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const photo = await photosService.uploadPhoto(propertyId, user.id, file, photos.length === 0);
+      const photo = await photosService.uploadPhoto(propertyId, file);
       setPhotos((prev) => [photo, ...prev]);
 
       toast({

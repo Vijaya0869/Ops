@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import * as documentsService from "@/services/property-documents.service";
-import { getCurrentUser } from "@/services/auth.service";
 import type { PropertyDocument } from "@/services/property-documents.service";
 
 export type { PropertyDocument };
@@ -35,10 +34,7 @@ export function usePropertyDocuments(propertyId: string | null) {
 
     setIsUploading(true);
     try {
-      const user = await getCurrentUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const doc = await documentsService.uploadDocument(propertyId, user.id, file, documentType);
+      const doc = await documentsService.uploadDocument(propertyId, file, documentType);
       setDocuments((prev) => [doc, ...prev]);
 
       toast({

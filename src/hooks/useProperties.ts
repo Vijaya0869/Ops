@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Property, PropertyFormData } from "@/types/property";
 import { toast } from "sonner";
 import { useAuth } from "./useAuth";
@@ -8,9 +8,7 @@ export function useProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const channelNameRef = useRef(`properties-realtime-${crypto.randomUUID()}`);
 
-  // Fetch properties and set up real-time subscription
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -30,14 +28,6 @@ export function useProperties() {
     };
 
     load();
-
-    const channel = propertiesService.subscribeToProperties(channelNameRef.current, {
-      onInsert: (row) => setProperties((prev) => [row, ...prev]),
-      onUpdate: (row) => setProperties((prev) => prev.map((p) => (p.id === row.id ? row : p))),
-      onDelete: (id) => setProperties((prev) => prev.filter((p) => p.id !== id)),
-    });
-
-    return () => propertiesService.unsubscribe(channel);
   }, [user]);
 
   const addProperty = async (formData: Partial<PropertyFormData>) => {
@@ -47,9 +37,9 @@ export function useProperties() {
     }
 
     try {
-      const property = await propertiesService.addProperty(user.id, formData);
+      const property = await propertiesService.addProperty(formData);
+      setProperties((prev) => [property, ...prev]);
       toast.success("Property added successfully");
-      // Real-time subscription will update the list automatically
       return property;
     } catch (error) {
       console.error("Error adding property:", error);
@@ -60,9 +50,9 @@ export function useProperties() {
 
   const updateProperty = async (id: string, formData: Partial<PropertyFormData>) => {
     try {
-      await propertiesService.updateProperty(id, formData);
+      const updated = await propertiesService.updateProperty(id, formData);
+      setProperties((prev) => prev.map((p) => (p.id === id ? updated : p)));
       toast.success("Property updated successfully");
-      // Real-time subscription will update the list automatically
       return true;
     } catch (error) {
       console.error("Error updating property:", error);
@@ -74,8 +64,8 @@ export function useProperties() {
   const deleteProperty = async (id: string) => {
     try {
       await propertiesService.deleteProperty(id);
+      setProperties((prev) => prev.filter((p) => p.id !== id));
       toast.success("Property deleted successfully");
-      // Real-time subscription will update the list automatically
       return true;
     } catch (error) {
       console.error("Error deleting property:", error);

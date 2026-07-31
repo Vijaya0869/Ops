@@ -30,6 +30,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fetchProfile as fetchProfileService } from "@/services/profiles.service";
+import type { Profile } from "@/services/profiles.service";
 
 const navigationItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/home" },
@@ -87,11 +88,6 @@ const endNavigationItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-interface Profile {
-  full_name: string | null;
-  avatar_url: string | null;
-}
-
 export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -118,7 +114,7 @@ export function Navigation() {
 
   const fetchProfile = async () => {
     if (!user) return;
-    const data = await fetchProfileService(user.id);
+    const data = await fetchProfileService();
     if (data) setProfile(data);
   };
 
@@ -128,8 +124,8 @@ export function Navigation() {
   };
 
   const getInitials = () => {
-    if (profile?.full_name) {
-      return profile.full_name
+    if (profile?.fullName) {
+      return profile.fullName
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -379,14 +375,14 @@ export function Navigation() {
           <Link to="/profile">
             <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/15 transition-colors cursor-pointer border border-transparent hover:border-accent/50">
               <Avatar className="h-9 w-9 ring-2 ring-border shadow-lg shadow-black/20">
-                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarImage src={profile?.avatarUrl || undefined} />
                 <AvatarFallback className="text-sm gold-gradient text-accent-foreground font-medium">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
-                  {profile?.full_name || "No name set"}
+                  {profile?.fullName || "No name set"}
                 </p>
                 <p className="text-xs text-muted-foreground truncate">
                   {user?.email}

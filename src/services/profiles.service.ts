@@ -1,49 +1,27 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api, setCachedUser } from "./api-client";
+import type { AuthUser } from "./api-client";
 
-export interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  company_name: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type Profile = AuthUser;
 
-export async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+export async function fetchProfile(): Promise<Profile> {
+  return api.get<Profile>("/auth/me");
 }
 
 export async function upsertProfile(
-  userId: string,
-  hasExistingProfile: boolean,
-  fields: { full_name?: string | null; company_name?: string | null; avatar_url?: string },
+  fields: { full_name?: string | null; company_name?: string | null },
 ): Promise<void> {
-  const payload = { user_id: userId, ...fields, updated_at: new Date().toISOString() };
+  const dto: Record<string, unknown> = {};
+  if ("full_name" in fields) dto.fullName = fields.full_name;
+  if ("company_name" in fields) dto.companyName = fields.company_name;
 
-  const { error } = hasExistingProfile
-    ? await supabase.from("profiles").update(payload).eq("user_id", userId)
-    : await supabase.from("profiles").insert(payload);
-
-  if (error) throw error;
+  const updated = await api.patch<Profile>("/auth/me", dto);
+  setCachedUser(updated);
 }
 
-export async function uploadAvatar(userId: string, file: File): Promise<string> {
-  const fileExt = file.name.split(".").pop();
-  const fileName = `${userId}/avatar.${fileExt}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(fileName, file, { upsert: true });
-  if (uploadError) throw uploadError;
-
-  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
-  return `${urlData.publicUrl}?t=${Date.now()}`;
+export async function uploadAvatar(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const updated = await api.post<Profile>("/auth/me/avatar", formData);
+  setCachedUser(updated);
+  return updated.avatarUrl || "";
 }

@@ -1,15 +1,128 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api, ApiError } from "./api-client";
 import { Property, PropertyFormData } from "@/types/property";
-import { RealtimeChannel } from "@supabase/supabase-js";
+
+// The backend (Prisma) returns camelCase field names; the rest of this app
+// was built against Supabase's raw snake_case columns. Translating shapes
+// here is the whole point of the service layer — nothing above this file
+// needs to know or care that the backend changed.
+
+function toDateOnly(value?: string | null): string | null {
+  return value ? value.slice(0, 10) : null;
+}
+
+interface ApiProperty {
+  id: string;
+  userId: string;
+  address: string;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  county: string | null;
+  propertyType: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  squareFeet: number | null;
+  lotSize: number | null;
+  yearBuilt: number | null;
+  purchasePrice: number | null;
+  arv: number | null;
+  rehabBudget: number | null;
+  actualRehabCost: number | null;
+  holdingCosts: number | null;
+  salePrice: number | null;
+  monthlyRent: number | null;
+  monthlyExpenses: number | null;
+  loanAmount: number | null;
+  interestRate: number | null;
+  lenderName: string | null;
+  status: Property["status"];
+  acquisitionDate: string | null;
+  saleDate: string | null;
+  notes: string | null;
+  mlsNumber: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function fromApi(row: ApiProperty): Property {
+  return {
+    id: row.id,
+    user_id: row.userId,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    zip_code: row.zipCode,
+    county: row.county,
+    property_type: row.propertyType,
+    bedrooms: row.bedrooms,
+    bathrooms: row.bathrooms,
+    square_feet: row.squareFeet,
+    lot_size: row.lotSize,
+    year_built: row.yearBuilt,
+    purchase_price: row.purchasePrice,
+    arv: row.arv,
+    rehab_budget: row.rehabBudget,
+    actual_rehab_cost: row.actualRehabCost,
+    holding_costs: row.holdingCosts,
+    sale_price: row.salePrice,
+    monthly_rent: row.monthlyRent,
+    monthly_expenses: row.monthlyExpenses,
+    loan_amount: row.loanAmount,
+    interest_rate: row.interestRate,
+    lender_name: row.lenderName,
+    status: row.status,
+    acquisition_date: toDateOnly(row.acquisitionDate),
+    sale_date: toDateOnly(row.saleDate),
+    notes: row.notes,
+    mls_number: row.mlsNumber,
+    created_at: row.createdAt,
+    updated_at: row.updatedAt,
+  };
+}
+
+const FIELD_MAP: Record<keyof PropertyFormData, string> = {
+  address: "address",
+  city: "city",
+  state: "state",
+  zip_code: "zipCode",
+  county: "county",
+  property_type: "propertyType",
+  bedrooms: "bedrooms",
+  bathrooms: "bathrooms",
+  square_feet: "squareFeet",
+  lot_size: "lotSize",
+  year_built: "yearBuilt",
+  purchase_price: "purchasePrice",
+  arv: "arv",
+  rehab_budget: "rehabBudget",
+  actual_rehab_cost: "actualRehabCost",
+  holding_costs: "holdingCosts",
+  sale_price: "salePrice",
+  monthly_rent: "monthlyRent",
+  monthly_expenses: "monthlyExpenses",
+  loan_amount: "loanAmount",
+  interest_rate: "interestRate",
+  lender_name: "lenderName",
+  status: "status",
+  acquisition_date: "acquisitionDate",
+  sale_date: "saleDate",
+  notes: "notes",
+  mls_number: "mlsNumber",
+};
+
+function toApiPayload(formData: Partial<PropertyFormData>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(formData) as [keyof PropertyFormData, unknown][]) {
+    const apiKey = FIELD_MAP[key];
+    if (!apiKey) continue;
+    payload[apiKey] = value === "" ? null : value;
+  }
+  return payload;
+}
 
 export async function fetchProperties(): Promise<Property[]> {
-  const { data, error } = await supabase
-    .from("properties")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return (data as Property[]) || [];
+  const rows = await api.get<ApiProperty[]>("/properties");
+  return rows.map(fromApi);
 }
 
 export type PropertySummary = Pick<
@@ -18,116 +131,41 @@ export type PropertySummary = Pick<
 >;
 
 export async function fetchPropertiesSummary(): Promise<PropertySummary[]> {
-  const { data, error } = await supabase
-    .from("properties")
-    .select("purchase_price, arv, loan_amount, monthly_rent, status");
-
-  if (error) throw error;
-  return data || [];
+  const rows = await api.get<ApiProperty[]>("/properties");
+  return rows.map((row) => ({
+    purchase_price: row.purchasePrice,
+    arv: row.arv,
+    loan_amount: row.loanAmount,
+    monthly_rent: row.monthlyRent,
+    status: row.status,
+  }));
 }
 
 export async function fetchPropertyById(id: string): Promise<Property | null> {
-  const { data, error } = await supabase
-    .from("properties")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as Property | null;
+  try {
+    const row = await api.get<ApiProperty>(`/properties/${id}`);
+    return fromApi(row);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
+      return null;
+    }
+    throw error;
+  }
 }
 
-export async function addProperty(
-  userId: string,
-  formData: Partial<PropertyFormData>,
-): Promise<Property> {
-  const { data, error } = await supabase
-    .from("properties")
-    .insert({
-      user_id: userId,
-      address: formData.address,
-      city: formData.city || null,
-      state: formData.state || null,
-      zip_code: formData.zip_code || null,
-      county: formData.county || null,
-      property_type: formData.property_type || null,
-      bedrooms: formData.bedrooms || null,
-      bathrooms: formData.bathrooms || null,
-      square_feet: formData.square_feet || null,
-      lot_size: formData.lot_size || null,
-      year_built: formData.year_built || null,
-      purchase_price: formData.purchase_price || null,
-      arv: formData.arv || null,
-      rehab_budget: formData.rehab_budget || null,
-      actual_rehab_cost: formData.actual_rehab_cost || null,
-      holding_costs: formData.holding_costs || null,
-      sale_price: formData.sale_price || null,
-      monthly_rent: formData.monthly_rent || null,
-      monthly_expenses: formData.monthly_expenses || null,
-      loan_amount: formData.loan_amount || null,
-      interest_rate: formData.interest_rate || null,
-      lender_name: formData.lender_name || null,
-      status: formData.status || "lead",
-      acquisition_date: formData.acquisition_date || null,
-      sale_date: formData.sale_date || null,
-      notes: formData.notes || null,
-      mls_number: formData.mls_number || null,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Property;
+export async function addProperty(formData: Partial<PropertyFormData>): Promise<Property> {
+  const row = await api.post<ApiProperty>("/properties", toApiPayload(formData));
+  return fromApi(row);
 }
 
 export async function updateProperty(
   id: string,
   formData: Partial<PropertyFormData>,
 ): Promise<Property> {
-  // Only write fields actually present in formData — anything the caller
-  // didn't include must be left untouched, not nulled or defaulted.
-  const updates = Object.fromEntries(
-    Object.entries(formData).map(([key, value]) => [key, value === "" ? null : value]),
-  );
-
-  const { data, error } = await supabase
-    .from("properties")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Property;
+  const row = await api.patch<ApiProperty>(`/properties/${id}`, toApiPayload(formData));
+  return fromApi(row);
 }
 
 export async function deleteProperty(id: string): Promise<void> {
-  const { error } = await supabase.from("properties").delete().eq("id", id);
-  if (error) throw error;
-}
-
-export function subscribeToProperties(
-  channelName: string,
-  handlers: {
-    onInsert: (row: Property) => void;
-    onUpdate: (row: Property) => void;
-    onDelete: (id: string) => void;
-  },
-): RealtimeChannel {
-  return supabase
-    .channel(channelName)
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "properties" },
-      (payload) => {
-        if (payload.eventType === "INSERT") handlers.onInsert(payload.new as Property);
-        else if (payload.eventType === "UPDATE") handlers.onUpdate(payload.new as Property);
-        else if (payload.eventType === "DELETE") handlers.onDelete(payload.old.id as string);
-      },
-    )
-    .subscribe();
-}
-
-export function unsubscribe(channel: RealtimeChannel): void {
-  supabase.removeChannel(channel);
+  await api.delete(`/properties/${id}`);
 }

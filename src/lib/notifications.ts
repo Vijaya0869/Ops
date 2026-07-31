@@ -1,5 +1,4 @@
 import { getCurrentUser } from "@/services/auth.service";
-import { fetchProfile } from "@/services/profiles.service";
 import { invokeSendNotification } from "@/services/notifications.service";
 
 interface DealNotificationData {
@@ -21,12 +20,10 @@ export async function sendDealStageNotification(data: DealNotificationData) {
       return;
     }
 
-    const profile = await fetchProfile(user.id);
-
     await invokeSendNotification({
       type: "deal_stage_change",
       recipientEmail: user.email,
-      recipientName: profile?.full_name || undefined,
+      recipientName: user.fullName || undefined,
       dealTitle: data.dealTitle,
       oldStage: data.oldStage,
       newStage: data.newStage,
@@ -48,12 +45,10 @@ export async function sendPropertyMilestoneNotification(
       return;
     }
 
-    const profile = await fetchProfile(user.id);
-
     await invokeSendNotification({
       type: "property_milestone",
       recipientEmail: user.email,
-      recipientName: profile?.full_name || undefined,
+      recipientName: user.fullName || undefined,
       propertyAddress: data.propertyAddress,
       milestone: data.milestone,
     });

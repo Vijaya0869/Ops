@@ -1,22 +1,19 @@
 import { useEffect, useState } from "react";
-import { Session, User } from "@supabase/supabase-js";
 import * as authService from "@/services/auth.service";
+import type { AuthUser } from "@/services/auth.service";
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const subscription = authService.onAuthStateChange((session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const subscription = authService.onAuthStateChange((user) => {
+      setUser(user);
       setLoading(false);
     });
 
-    authService.getSession().then((session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    authService.getSession().then((user) => {
+      setUser(user);
       setLoading(false);
     });
 
@@ -27,5 +24,5 @@ export function useAuth() {
     await authService.signOut();
   };
 
-  return { user, session, loading, signOut };
+  return { user, loading, signOut };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Deal, DealFormData, DealStage } from "@/types/deal";
 import { toast } from "sonner";
 import { sendDealStageNotification } from "@/lib/notifications";
@@ -9,12 +9,8 @@ export function useDeals() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const channelNameRef = useRef(`deals-realtime-${crypto.randomUUID()}`);
 
-  // Fetch deals and set up real-time subscription
   useEffect(() => {
-    // Row-level security returns nothing without a session, so wait for it —
-    // otherwise a hard refresh loads an empty list and never retries.
     if (!user) {
       setDeals([]);
       setIsLoading(false);
@@ -34,14 +30,6 @@ export function useDeals() {
     };
 
     load();
-
-    const channel = dealsService.subscribeToDeals(channelNameRef.current, {
-      onInsert: (row) => setDeals((prev) => [row, ...prev]),
-      onUpdate: (row) => setDeals((prev) => prev.map((d) => (d.id === row.id ? row : d))),
-      onDelete: (id) => setDeals((prev) => prev.filter((d) => d.id !== id)),
-    });
-
-    return () => dealsService.unsubscribe(channel);
   }, [user]);
 
   const addDeal = async (data: Partial<DealFormData>) => {
@@ -51,9 +39,9 @@ export function useDeals() {
     }
 
     try {
-      const newDeal = await dealsService.addDeal(user.id, data);
+      const newDeal = await dealsService.addDeal(data);
+      setDeals((prev) => [newDeal, ...prev]);
       toast.success("Deal added successfully");
-      // Real-time subscription will update the list automatically
       return newDeal;
     } catch (error: any) {
       console.error("Error adding deal:", error);
@@ -65,8 +53,8 @@ export function useDeals() {
   const updateDeal = async (id: string, data: Partial<DealFormData>) => {
     try {
       const updatedDeal = await dealsService.updateDeal(id, data);
+      setDeals((prev) => prev.map((d) => (d.id === id ? updatedDeal : d)));
       toast.success("Deal updated successfully");
-      // Real-time subscription will update the list automatically
       return updatedDeal;
     } catch (error: any) {
       console.error("Error updating deal:", error);
@@ -81,6 +69,7 @@ export function useDeals() {
 
     try {
       await dealsService.updateDealStage(id, stage);
+      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, stage } : d)));
 
       // Send notification for stage change
       if (deal && oldStage && oldStage !== stage) {
@@ -90,7 +79,6 @@ export function useDeals() {
           newStage: stage,
         });
       }
-      // Real-time subscription will update the list automatically
     } catch (error) {
       console.error("Error updating deal stage:", error);
       toast.error("Failed to update deal stage");
@@ -100,8 +88,8 @@ export function useDeals() {
   const deleteDeal = async (id: string) => {
     try {
       await dealsService.deleteDeal(id);
+      setDeals((prev) => prev.filter((d) => d.id !== id));
       toast.success("Deal deleted successfully");
-      // Real-time subscription will update the list automatically
     } catch (error) {
       console.error("Error deleting deal:", error);
       toast.error("Failed to delete deal");

@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { api, API_URL, getToken } from "./api-client";
 
 export interface PropertyDocument {
   id: string;
@@ -12,67 +12,60 @@ export interface PropertyDocument {
   created_at: string;
 }
 
-export async function fetchDocuments(propertyId: string): Promise<PropertyDocument[]> {
-  const { data, error } = await supabase
-    .from("property_documents")
-    .select("*")
-    .eq("property_id", propertyId)
-    .order("created_at", { ascending: false });
+interface ApiDocument {
+  id: string;
+  userId: string;
+  propertyId: string;
+  fileName: string;
+  filePath: string;
+  fileType: string | null;
+  fileSize: number | null;
+  documentType: string | null;
+  createdAt: string;
+}
 
-  if (error) throw error;
-  return data || [];
+function fromApi(row: ApiDocument): PropertyDocument {
+  return {
+    id: row.id,
+    property_id: row.propertyId,
+    user_id: row.userId,
+    file_path: row.filePath,
+    file_name: row.fileName,
+    file_type: row.fileType,
+    file_size: row.fileSize,
+    document_type: row.documentType,
+    created_at: row.createdAt,
+  };
+}
+
+export async function fetchDocuments(propertyId: string): Promise<PropertyDocument[]> {
+  const rows = await api.get<ApiDocument[]>(`/property-documents?propertyId=${propertyId}`);
+  return rows.map(fromApi);
 }
 
 export async function uploadDocument(
   propertyId: string,
-  userId: string,
   file: File,
   documentType?: string,
 ): Promise<PropertyDocument> {
-  const fileExt = file.name.split(".").pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-  const filePath = `${userId}/${propertyId}/${fileName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("property-documents")
-    .upload(filePath, file);
-  if (uploadError) throw uploadError;
-
-  const { data, error: insertError } = await supabase
-    .from("property_documents")
-    .insert({
-      property_id: propertyId,
-      user_id: userId,
-      file_path: filePath,
-      file_name: file.name,
-      file_type: file.type,
-      file_size: file.size,
-      document_type: documentType || null,
-    })
-    .select()
-    .single();
-  if (insertError) throw insertError;
-
-  return data;
+  const formData = new FormData();
+  formData.append("file", file);
+  if (documentType) formData.append("documentType", documentType);
+  const row = await api.post<ApiDocument>(
+    `/property-documents?propertyId=${propertyId}`,
+    formData,
+  );
+  return fromApi(row);
 }
 
 export async function deleteDocument(doc: PropertyDocument): Promise<void> {
-  const { error: storageError } = await supabase.storage
-    .from("property-documents")
-    .remove([doc.file_path]);
-  if (storageError) throw storageError;
-
-  const { error: dbError } = await supabase
-    .from("property_documents")
-    .delete()
-    .eq("id", doc.id);
-  if (dbError) throw dbError;
+  await api.delete(`/property-documents/${doc.id}`);
 }
 
 export async function downloadDocument(doc: PropertyDocument): Promise<Blob> {
-  const { data, error } = await supabase.storage
-    .from("property-documents")
-    .download(doc.file_path);
-  if (error) throw error;
-  return data;
+  const response = await fetch(`${API_URL}/property-documents/${doc.id}/download`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!response.ok) throw new Error("Failed to download document");
+  return response.blob();
 }
