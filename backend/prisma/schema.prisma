@@ -1,0 +1,404 @@
+// Prisma schema for the Ops (REI Dashboard) backend.
+// Mirrors the 5 existing Supabase tables 1:1, plus the 10 new tables from
+// Phase 2 of the migration plan (see SESSION-NOTES.md).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum PropertyStatus {
+  lead
+  under_contract
+  owned
+  in_rehab
+  listed
+  sold
+  rental
+}
+
+enum DealStage {
+  lead
+  analyzing
+  offer_made
+  under_contract
+  due_diligence
+  closed
+  dead
+}
+
+enum CostType {
+  purchase
+  closing
+  holding
+  selling
+}
+
+enum LoanStatus {
+  active
+  paid_off
+  defaulted
+  refinanced
+}
+
+enum ProjectStatus {
+  planned
+  in_progress
+  on_hold
+  completed
+  cancelled
+}
+
+enum TenantStatus {
+  active
+  past
+  pending
+  evicted
+}
+
+enum RentPaymentStatus {
+  paid
+  late
+  partial
+  missed
+}
+
+// ---------------------------------------------------------------------------
+// Core (mirrors existing Supabase tables)
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String?  @map("full_name")
+  companyName  String?  @map("company_name")
+  avatarUrl    String?  @map("avatar_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  properties        Property[]
+  deals             Deal[]
+  propertyPhotos    PropertyPhoto[]
+  propertyDocuments PropertyDocument[]
+  expenses          Expense[]
+  income            Income[]
+  projects          Project[]
+  lenders           Lender[]
+  loans             Loan[]
+  renovationItems   RenovationItem[]
+  tenants           Tenant[]
+  dealCosts         DealCost[]
+  dealAnalyses      DealAnalysis[]
+
+  @@map("users")
+}
+
+model Property {
+  id              String         @id @default(uuid())
+  userId          String         @map("user_id")
+  address         String
+  city            String?
+  state           String?
+  zipCode         String?        @map("zip_code")
+  county          String?
+  propertyType    String?        @map("property_type")
+  bedrooms        Int?
+  bathrooms       Float?
+  squareFeet      Int?           @map("square_feet")
+  lotSize         Float?         @map("lot_size")
+  yearBuilt       Int?           @map("year_built")
+  purchasePrice   Float?         @map("purchase_price")
+  arv             Float?
+  rehabBudget     Float?         @map("rehab_budget")
+  actualRehabCost Float?         @map("actual_rehab_cost")
+  holdingCosts    Float?         @map("holding_costs")
+  salePrice       Float?         @map("sale_price")
+  monthlyRent     Float?         @map("monthly_rent")
+  monthlyExpenses Float?         @map("monthly_expenses")
+  loanAmount      Float?         @map("loan_amount")
+  interestRate    Float?         @map("interest_rate")
+  lenderName      String?        @map("lender_name")
+  status          PropertyStatus @default(lead)
+  acquisitionDate DateTime?      @map("acquisition_date")
+  saleDate        DateTime?      @map("sale_date")
+  notes           String?
+  mlsNumber       String?        @map("mls_number")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deals           Deal[]
+  photos          PropertyPhoto[]
+  documents       PropertyDocument[]
+  expenses        Expense[]
+  income          Income[]
+  projects        Project[]
+  loans           Loan[]
+  renovationItems RenovationItem[]
+  tenants         Tenant[]
+
+  @@map("properties")
+}
+
+model Deal {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  propertyId     String?   @map("property_id")
+  title          String
+  address        String?
+  city           String?
+  state          String?
+  askingPrice    Float?    @map("asking_price")
+  offerPrice     Float?    @map("offer_price")
+  arv            Float?
+  rehabEstimate  Float?    @map("rehab_estimate")
+  expectedProfit Float?    @map("expected_profit")
+  contactName    String?   @map("contact_name")
+  contactPhone   String?   @map("contact_phone")
+  contactEmail   String?   @map("contact_email")
+  source         String?
+  stage          DealStage @default(lead)
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  costs    DealCost[]
+  analyses DealAnalysis[]
+
+  @@map("deals")
+}
+
+model PropertyPhoto {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  propertyId String   @map("property_id")
+  fileName   String   @map("file_name")
+  filePath   String   @map("file_path")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_photos")
+}
+
+model PropertyDocument {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  propertyId   String   @map("property_id")
+  fileName     String   @map("file_name")
+  filePath     String   @map("file_path")
+  fileSize     Int?     @map("file_size")
+  fileType     String?  @map("file_type")
+  documentType String?  @map("document_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2 additions
+// ---------------------------------------------------------------------------
+
+model Expense {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  propertyId  String   @map("property_id")
+  category    String
+  description String?
+  amount      Float
+  expenseDate DateTime @map("expense_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("expenses")
+}
+
+model Income {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  propertyId  String   @map("property_id")
+  category    String
+  description String?
+  amount      Float
+  incomeDate  DateTime @map("income_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("income")
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  propertyId  String        @map("property_id")
+  name        String
+  description String?
+  status      ProjectStatus @default(planned)
+  budget      Float?
+  actualCost  Float?        @map("actual_cost")
+  startDate   DateTime?     @map("start_date")
+  endDate     DateTime?     @map("end_date")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property        Property         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  renovationItems RenovationItem[]
+
+  @@map("projects")
+}
+
+model Lender {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  name         String
+  contactName  String?  @map("contact_name")
+  contactEmail String?  @map("contact_email")
+  contactPhone String?  @map("contact_phone")
+  lenderType   String?  @map("lender_type")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loans Loan[]
+
+  @@map("lenders")
+}
+
+model Loan {
+  id             String     @id @default(uuid())
+  userId         String     @map("user_id")
+  propertyId     String     @map("property_id")
+  lenderId       String?    @map("lender_id")
+  principal      Float
+  interestRate   Float      @map("interest_rate")
+  termMonths     Int?       @map("term_months")
+  monthlyPayment Float?     @map("monthly_payment")
+  startDate      DateTime   @map("start_date")
+  status         LoanStatus @default(active)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  lender   Lender?  @relation(fields: [lenderId], references: [id], onDelete: SetNull)
+
+  @@map("loans")
+}
+
+model RenovationItem {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  propertyId    String   @map("property_id")
+  projectId     String?  @map("project_id")
+  category      String
+  description   String?
+  estimatedCost Float    @map("estimated_cost")
+  actualCost    Float?   @map("actual_cost")
+  completed     Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  project  Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@map("renovation_items")
+}
+
+model Tenant {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  propertyId    String       @map("property_id")
+  fullName      String       @map("full_name")
+  email         String?
+  phone         String?
+  leaseStart    DateTime?    @map("lease_start")
+  leaseEnd      DateTime?    @map("lease_end")
+  monthlyRent   Float        @map("monthly_rent")
+  depositAmount Float?       @map("deposit_amount")
+  status        TenantStatus @default(active)
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property     Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rentPayments RentPayment[]
+
+  @@map("tenants")
+}
+
+model RentPayment {
+  id         String            @id @default(uuid())
+  tenantId   String            @map("tenant_id")
+  amountDue  Float             @map("amount_due")
+  amountPaid Float?            @map("amount_paid")
+  dueDate    DateTime          @map("due_date")
+  paidDate   DateTime?         @map("paid_date")
+  status     RentPaymentStatus @default(paid)
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("rent_payments")
+}
+
+model DealCost {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  dealId      String   @map("deal_id")
+  costType    CostType @map("cost_type")
+  category    String
+  description String?
+  amount      Float
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@map("deal_costs")
+}
+
+model DealAnalysis {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  dealId         String   @map("deal_id")
+  locationScore  Float?   @map("location_score")
+  conditionScore Float?   @map("condition_score")
+  financialScore Float?   @map("financial_score")
+  riskScore      Float?   @map("risk_score")
+  totalScore     Float?   @map("total_score")
+  recommendation String?
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@map("deal_analyses")
+}
