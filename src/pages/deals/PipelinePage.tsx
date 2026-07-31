@@ -1,0 +1,20 @@
+import { Navigation } from "@/components/Navigation";
+import { DealsPipelineBoard } from "@/components/deals/DealsPipelineBoard";
+
+export default function PipelinePage() {
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Navigation />
+      <main className="flex-1 p-6">
+        <div className="max-w-full mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-foreground">Deal Pipeline</h1>
+            <p className="text-muted-foreground">Track your deals through each stage of the acquisition process</p>
+          </div>
+          
+          <DealsPipelineBoard />
+        </div>
+      </main>
+    </div>
+  );
+}

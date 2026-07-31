@@ -1,0 +1,235 @@
+import { useMemo } from "react";
+import { useProperties } from "./useProperties";
+import { useDeals } from "./useDeals";
+import { Property } from "@/types/property";
+import { Deal } from "@/types/deal";
+
+export interface DashboardMetrics {
+  // Operations
+  totalAcquisitions: number;
+  totalDispositions: number;
+  activeRentals: number;
+  constructionProjects: number;
+  occupancyRate: number;
+  projectsOnTime: number;
+  
+  // Portfolio
+  portfolioValue: number;
+  totalProperties: number;
+  averageROI: number;
+  totalEquity: number;
+  
+  // Financial
+  totalIncome: number;
+  totalExpenses: number;
+  grossProfit: number;
+  netProfit: number;
+  grossProfitMargin: number;
+  netProfitMargin: number;
+  cashFlow: number;
+  
+  // Deals
+  totalLeads: number;
+  underContract: number;
+  closedDeals: number;
+  avgSpread: number;
+  purchaseVolume: number;
+  avgARV: number;
+  avgRehabBudget: number;
+  
+  // Lender
+  totalLoanAmount: number;
+  avgInterestRate: number;
+  avgLTV: number;
+  
+  // Property breakdown
+  propertyBreakdown: {
+    type: string;
+    count: number;
+    value: number;
+    avgRent: number;
+  }[];
+  
+  // Recent acquisitions
+  recentAcquisitions: Property[];
+  recentSales: Property[];
+  activeConstructionProperties: Property[];
+  rentalProperties: Property[];
+}
+
+export function useDashboardData() {
+  const { properties, loading: propertiesLoading } = useProperties();
+  const { deals, isLoading: dealsLoading } = useDeals();
+
+  const metrics = useMemo<DashboardMetrics>(() => {
+    // Filter properties by status
+    const ownedProperties = properties.filter(p => 
+      ['owned', 'in_rehab', 'listed', 'rental'].includes(p.status || '')
+    );
+    const soldProperties = properties.filter(p => p.status === 'sold');
+    const rentalProperties = properties.filter(p => p.status === 'rental');
+    const constructionProperties = properties.filter(p => p.status === 'in_rehab');
+    const acquisitions = properties.filter(p => 
+      ['owned', 'in_rehab', 'listed', 'rental', 'sold'].includes(p.status || '')
+    );
+
+    // Calculate portfolio value
+    const portfolioValue = ownedProperties.reduce((sum, p) => {
+      const value = p.arv || p.purchase_price || 0;
+      return sum + value;
+    }, 0);
+
+    // Calculate total loan amounts
+    const totalLoanAmount = ownedProperties.reduce((sum, p) => {
+      return sum + (p.loan_amount || 0);
+    }, 0);
+
+    // Calculate equity
+    const totalEquity = portfolioValue - totalLoanAmount;
+
+    // Calculate financial metrics
+    const monthlyRentIncome = rentalProperties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0);
+    const monthlyExpenses = rentalProperties.reduce((sum, p) => sum + (p.monthly_expenses || 0), 0);
+    const annualIncome = monthlyRentIncome * 12;
+    const annualExpenses = monthlyExpenses * 12;
+    
+    // Calculate profits from sold properties
+    const salesProfit = soldProperties.reduce((sum, p) => {
+      const profit = (p.sale_price || 0) - (p.purchase_price || 0) - (p.actual_rehab_cost || p.rehab_budget || 0) - (p.holding_costs || 0);
+      return sum + profit;
+    }, 0);
+
+    const grossProfit = annualIncome - annualExpenses + salesProfit;
+    const netProfit = grossProfit * 0.7; // Estimate after taxes etc.
+    
+    // Average interest rate
+    const propertiesWithLoans = ownedProperties.filter(p => p.loan_amount && p.interest_rate);
+    const avgInterestRate = propertiesWithLoans.length > 0
+      ? propertiesWithLoans.reduce((sum, p) => sum + (p.interest_rate || 0), 0) / propertiesWithLoans.length
+      : 0;
+
+    // Average LTV
+    const avgLTV = ownedProperties.length > 0
+      ? ownedProperties.reduce((sum, p) => {
+          const value = p.arv || p.purchase_price || 0;
+          const loan = p.loan_amount || 0;
+          return value > 0 ? sum + (loan / value * 100) : sum;
+        }, 0) / ownedProperties.length
+      : 0;
+
+    // Deal metrics
+    const leadDeals = deals.filter(d => d.stage === 'lead');
+    const analyzingDeals = deals.filter(d => d.stage === 'analyzing');
+    const underContractDeals = deals.filter(d => ['under_contract', 'due_diligence'].includes(d.stage));
+    const closedDeals = deals.filter(d => d.stage === 'closed');
+
+    const avgSpread = closedDeals.length > 0
+      ? closedDeals.reduce((sum, d) => sum + (d.expected_profit || 0), 0) / closedDeals.length
+      : 0;
+
+    const purchaseVolume = closedDeals.reduce((sum, d) => sum + (d.offer_price || d.asking_price || 0), 0);
+    
+    const dealsWithARV = deals.filter(d => d.arv);
+    const avgARV = dealsWithARV.length > 0
+      ? dealsWithARV.reduce((sum, d) => sum + (d.arv || 0), 0) / dealsWithARV.length
+      : 0;
+
+    const dealsWithRehab = deals.filter(d => d.rehab_estimate);
+    const avgRehabBudget = dealsWithRehab.length > 0
+      ? dealsWithRehab.reduce((sum, d) => sum + (d.rehab_estimate || 0), 0) / dealsWithRehab.length
+      : 0;
+
+    // Property breakdown by type
+    const typeGroups = properties.reduce((acc, p) => {
+      const type = p.property_type || 'Other';
+      if (!acc[type]) {
+        acc[type] = { count: 0, value: 0, rentSum: 0, rentCount: 0 };
+      }
+      acc[type].count++;
+      acc[type].value += p.arv || p.purchase_price || 0;
+      if (p.monthly_rent) {
+        acc[type].rentSum += p.monthly_rent;
+        acc[type].rentCount++;
+      }
+      return acc;
+    }, {} as Record<string, { count: number; value: number; rentSum: number; rentCount: number }>);
+
+    const propertyBreakdown = Object.entries(typeGroups).map(([type, data]) => ({
+      type,
+      count: data.count,
+      value: data.value,
+      avgRent: data.rentCount > 0 ? data.rentSum / data.rentCount : 0,
+    }));
+
+    // Occupancy rate
+    const occupiedRentals = rentalProperties.filter(p => p.monthly_rent && p.monthly_rent > 0).length;
+    const occupancyRate = rentalProperties.length > 0
+      ? (occupiedRentals / rentalProperties.length) * 100
+      : 0;
+
+    // Average ROI calculation
+    const propertiesWithROI = soldProperties.filter(p => p.purchase_price && p.sale_price);
+    const averageROI = propertiesWithROI.length > 0
+      ? propertiesWithROI.reduce((sum, p) => {
+          const investment = (p.purchase_price || 0) + (p.actual_rehab_cost || p.rehab_budget || 0);
+          const profit = (p.sale_price || 0) - investment;
+          return investment > 0 ? sum + (profit / investment * 100) : sum;
+        }, 0) / propertiesWithROI.length
+      : 0;
+
+    return {
+      // Operations
+      totalAcquisitions: acquisitions.length,
+      totalDispositions: soldProperties.length,
+      activeRentals: rentalProperties.length,
+      constructionProjects: constructionProperties.length,
+      occupancyRate: occupancyRate || 100,
+      projectsOnTime: constructionProperties.length, // Assume all on time for now
+      
+      // Portfolio
+      portfolioValue,
+      totalProperties: properties.length,
+      averageROI: averageROI || 0,
+      totalEquity,
+      
+      // Financial
+      totalIncome: annualIncome + salesProfit,
+      totalExpenses: annualExpenses,
+      grossProfit,
+      netProfit,
+      grossProfitMargin: annualIncome > 0 ? (grossProfit / annualIncome) * 100 : 0,
+      netProfitMargin: annualIncome > 0 ? (netProfit / annualIncome) * 100 : 0,
+      cashFlow: monthlyRentIncome - monthlyExpenses,
+      
+      // Deals
+      totalLeads: leadDeals.length + analyzingDeals.length,
+      underContract: underContractDeals.length,
+      closedDeals: closedDeals.length,
+      avgSpread,
+      purchaseVolume,
+      avgARV,
+      avgRehabBudget,
+      
+      // Lender
+      totalLoanAmount,
+      avgInterestRate,
+      avgLTV,
+      
+      // Property breakdown
+      propertyBreakdown,
+      
+      // Recent data
+      recentAcquisitions: acquisitions.slice(0, 5),
+      recentSales: soldProperties.slice(0, 5),
+      activeConstructionProperties: constructionProperties,
+      rentalProperties,
+    };
+  }, [properties, deals]);
+
+  return {
+    metrics,
+    properties,
+    deals,
+    loading: propertiesLoading || dealsLoading,
+  };
+}

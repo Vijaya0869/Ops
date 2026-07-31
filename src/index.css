@@ -1,0 +1,215 @@
+/* Inter — self-hosted variable font (no external CDN request) */
+@import "@fontsource-variable/inter";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Slate & Blue — professional dark palette */
+    --background: 223 49% 8%;
+    --foreground: 214 32% 91%;
+
+    /* Raised panels — solid, not translucent */
+    --card: 220 42% 13%;
+    --card-foreground: 214 32% 91%;
+
+    --popover: 220 42% 13%;
+    --popover-foreground: 214 32% 91%;
+
+    /* Blue primary */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-muted: 217 60% 45%;
+    --primary-dark: 221 45% 11%;
+
+    /* `gold` is retained as an alias of the accent so any legacy
+       utility still resolves to the current accent colour. */
+    --gold: 217 91% 60%;
+    --gold-foreground: 0 0% 100%;
+    --gold-light: 213 94% 68%;
+    --gold-dark: 221 83% 53%;
+
+    /* Semantic status — separate from the accent hue */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 158 64% 52%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 214 32% 91%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 20%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    /* Panel surfaces (formerly glass) */
+    --panel: 220 42% 13%;
+    --panel-raised: 220 38% 16%;
+    --panel-border: 217 33% 17%;
+
+    --sidebar-background: 221 45% 11%;
+    --sidebar-foreground: 214 32% 91%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 214 32% 91%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  /* The app is dark by default; `.dark` mirrors :root so an explicit
+     class on <html> can never fall back to a stale palette. */
+  .dark {
+    --background: 223 49% 8%;
+    --foreground: 214 32% 91%;
+
+    --card: 220 42% 13%;
+    --card-foreground: 214 32% 91%;
+
+    --popover: 220 42% 13%;
+    --popover-foreground: 214 32% 91%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --gold: 217 91% 60%;
+    --gold-foreground: 0 0% 100%;
+    --gold-light: 213 94% 68%;
+    --gold-dark: 221 83% 53%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 214 32% 91%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 20%;
+    --ring: 217 91% 60%;
+
+    --panel: 220 42% 13%;
+    --panel-raised: 220 38% 16%;
+    --panel-border: 217 33% 17%;
+
+    --sidebar-background: 221 45% 11%;
+    --sidebar-foreground: 214 32% 91%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 214 32% 91%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+/* Surface utilities.
+   These class names are unchanged so existing markup keeps working, but
+   they now render solid panels with a hairline border instead of
+   translucent frosted glass. */
+@layer components {
+  .glass {
+    background: hsl(var(--panel));
+    border: 1px solid hsl(var(--panel-border));
+    box-shadow: 0 1px 2px hsl(223 49% 4% / 0.4);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .glass:hover {
+    border-color: hsl(var(--border) / 0.8);
+    background: hsl(var(--panel-raised));
+  }
+
+  .glass-card {
+    background: hsl(var(--panel));
+    border: 1px solid hsl(var(--panel-border));
+    box-shadow: 0 1px 2px hsl(223 49% 4% / 0.4);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .glass-card:hover {
+    border-color: hsl(var(--border) / 0.8);
+    background: hsl(var(--panel-raised));
+  }
+
+  .glass-card-light {
+    background: hsl(var(--panel-raised));
+    border: 1px solid hsl(var(--panel-border));
+    box-shadow: 0 1px 2px hsl(223 49% 4% / 0.4);
+  }
+
+  .glass-dark {
+    background: hsl(223 49% 6%);
+    border: 1px solid hsl(var(--panel-border));
+  }
+
+  .gold-gradient {
+    background: hsl(var(--accent));
+  }
+
+  .purple-gradient {
+    background: hsl(var(--background));
+  }
+
+  .premium-shadow {
+    box-shadow: 0 1px 3px hsl(223 49% 4% / 0.5);
+  }
+
+  /* Money and metrics: fixed-width digits so columns align. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Fixed-width digits app-wide: every figure in a column lines up,
+       whether it sits in a table, a KPI tile or a summary row. Add
+       `.pnum` to opt a specific element back into proportional digits. */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  .pnum {
+    font-variant-numeric: proportional-nums;
+    font-feature-settings: "tnum" 0;
+  }
+}
