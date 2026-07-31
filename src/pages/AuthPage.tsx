@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import * as authService from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,10 @@ const GoogleIcon = () => (
 );
 
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,13 +42,13 @@ const AuthPage = () => {
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname || "/home";
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const subscription = authService.onAuthStateChange((session) => {
       if (session?.user) {
         navigate(from, { replace: true });
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    authService.getSession().then((session) => {
       if (session?.user) {
         navigate(from, { replace: true });
       }
@@ -75,19 +79,16 @@ const AuthPage = () => {
     if (!validateForm(false)) return;
 
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      if (error.message.includes("Invalid login credentials")) {
+    try {
+      await authService.signInWithPassword(email, password);
+      toast.success("Welcome back!");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      if (message.includes("Invalid login credentials")) {
         toast.error("Invalid email or password. Please try again.");
       } else {
-        toast.error(error.message);
+        toast.error(message);
       }
-    } else {
-      toast.success("Welcome back!");
     }
     setIsLoading(false);
   };
@@ -99,25 +100,16 @@ const AuthPage = () => {
     setIsLoading(true);
     const redirectUrl = `${window.location.origin}/home`;
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
-
-    if (error) {
-      if (error.message.includes("already registered")) {
+    try {
+      await authService.signUp(email, password, fullName, redirectUrl);
+      toast.success("Account created successfully!");
+    } catch (error) {
+      const message = getErrorMessage(error);
+      if (message.includes("already registered")) {
         toast.error("This email is already registered. Please sign in instead.");
       } else {
-        toast.error(error.message);
+        toast.error(message);
       }
-    } else {
-      toast.success("Account created successfully!");
     }
     setIsLoading(false);
   };
@@ -125,16 +117,11 @@ const AuthPage = () => {
   const handleGoogleLogin = async () => {
     setSocialLoading('google');
     const redirectUrl = `${window.location.origin}/home`;
-    
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUrl,
-      },
-    });
 
-    if (error) {
-      toast.error(`Failed to sign in with Google: ${error.message}`);
+    try {
+      await authService.signInWithGoogle(redirectUrl);
+    } catch (error) {
+      toast.error(`Failed to sign in with Google: ${getErrorMessage(error)}`);
       setSocialLoading(null);
     }
   };

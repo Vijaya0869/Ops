@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { Property } from "@/types/property";
+import { fetchPropertyById, updateProperty } from "@/services/properties.service";
+import { Property, PropertyFormData } from "@/types/property";
 import { PropertyPhotoUpload } from "@/components/properties/PropertyPhotoUpload";
 import { PropertyDocumentUpload } from "@/components/properties/PropertyDocumentUpload";
 import { PropertyFormDialog } from "@/components/properties/PropertyFormDialog";
@@ -64,16 +64,10 @@ export default function PropertyDetailPage() {
 
   const fetchProperty = async () => {
     if (!id) return;
-    
+
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-
-      if (error) throw error;
+      const data = await fetchPropertyById(id);
       if (!data) {
         toast({
           title: "Not Found",
@@ -83,8 +77,8 @@ export default function PropertyDetailPage() {
         navigate("/properties/portfolio");
         return;
       }
-      
-      setProperty(data as Property);
+
+      setProperty(data);
     } catch (error: any) {
       console.error("Error fetching property:", error);
       toast({
@@ -97,20 +91,13 @@ export default function PropertyDetailPage() {
     }
   };
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: Partial<PropertyFormData>) => {
     if (!property) return false;
 
     try {
-      const { data: updated, error } = await supabase
-        .from("properties")
-        .update(data)
-        .eq("id", property.id)
-        .select()
-        .single();
+      const updated = await updateProperty(property.id, data);
 
-      if (error) throw error;
-
-      setProperty(updated as Property);
+      setProperty(updated);
       toast({
         title: "Success",
         description: "Property updated successfully",

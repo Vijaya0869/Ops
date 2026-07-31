@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Deal, DealFormData, DealStage } from "@/types/deal";
 import { toast } from "sonner";
 import { sendDealStageNotification } from "@/lib/notifications";
 import { useAuth } from "./useAuth";
+import * as dealsService from "@/services/deals.service";
 
 export function useDeals() {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -21,17 +21,11 @@ export function useDeals() {
       return;
     }
 
-    const fetchDeals = async () => {
+    const load = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("deals")
-          .select("*")
-          .order("updated_at", { ascending: false });
-
-        if (error) throw error;
-        setDeals((data as Deal[]) || []);
-      } catch (error: any) {
+        setDeals(await dealsService.fetchDeals());
+      } catch (error) {
         console.error("Error fetching deals:", error);
         toast.error("Failed to load deals");
       } finally {
@@ -39,69 +33,25 @@ export function useDeals() {
       }
     };
 
-    fetchDeals();
+    load();
 
-    // Real-time subscription
-    const channel = supabase
-      .channel(channelNameRef.current)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'deals',
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setDeals((prev) => [payload.new as Deal, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setDeals((prev) =>
-              prev.map((d) => (d.id === payload.new.id ? (payload.new as Deal) : d))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setDeals((prev) => prev.filter((d) => d.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
+    const channel = dealsService.subscribeToDeals(channelNameRef.current, {
+      onInsert: (row) => setDeals((prev) => [row, ...prev]),
+      onUpdate: (row) => setDeals((prev) => prev.map((d) => (d.id === row.id ? row : d))),
+      onDelete: (id) => setDeals((prev) => prev.filter((d) => d.id !== id)),
+    });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => dealsService.unsubscribe(channel);
   }, [user]);
 
   const addDeal = async (data: Partial<DealFormData>) => {
+    if (!user) {
+      toast.error("Not authenticated");
+      return null;
+    }
+
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
-
-      const insertData = {
-        title: data.title || "",
-        address: data.address || null,
-        city: data.city || null,
-        state: data.state || null,
-        asking_price: data.asking_price || null,
-        offer_price: data.offer_price || null,
-        arv: data.arv || null,
-        rehab_estimate: data.rehab_estimate || null,
-        expected_profit: data.expected_profit || null,
-        stage: data.stage || "lead",
-        source: data.source || null,
-        contact_name: data.contact_name || null,
-        contact_phone: data.contact_phone || null,
-        contact_email: data.contact_email || null,
-        notes: data.notes || null,
-        user_id: userData.user.id,
-      };
-
-      const { data: newDeal, error } = await supabase
-        .from("deals")
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const newDeal = await dealsService.addDeal(user.id, data);
       toast.success("Deal added successfully");
       // Real-time subscription will update the list automatically
       return newDeal;
@@ -114,15 +64,7 @@ export function useDeals() {
 
   const updateDeal = async (id: string, data: Partial<DealFormData>) => {
     try {
-      const { data: updatedDeal, error } = await supabase
-        .from("deals")
-        .update(data)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const updatedDeal = await dealsService.updateDeal(id, data);
       toast.success("Deal updated successfully");
       // Real-time subscription will update the list automatically
       return updatedDeal;
@@ -138,12 +80,7 @@ export function useDeals() {
     const oldStage = deal?.stage;
 
     try {
-      const { error } = await supabase
-        .from("deals")
-        .update({ stage })
-        .eq("id", id);
-
-      if (error) throw error;
+      await dealsService.updateDealStage(id, stage);
 
       // Send notification for stage change
       if (deal && oldStage && oldStage !== stage) {
@@ -154,7 +91,7 @@ export function useDeals() {
         });
       }
       // Real-time subscription will update the list automatically
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating deal stage:", error);
       toast.error("Failed to update deal stage");
     }
@@ -162,13 +99,10 @@ export function useDeals() {
 
   const deleteDeal = async (id: string) => {
     try {
-      const { error } = await supabase.from("deals").delete().eq("id", id);
-
-      if (error) throw error;
-
+      await dealsService.deleteDeal(id);
       toast.success("Deal deleted successfully");
       // Real-time subscription will update the list automatically
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting deal:", error);
       toast.error("Failed to delete deal");
     }
@@ -178,14 +112,8 @@ export function useDeals() {
   const fetchDeals = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("deals")
-        .select("*")
-        .order("updated_at", { ascending: false });
-
-      if (error) throw error;
-      setDeals((data as Deal[]) || []);
-    } catch (error: any) {
+      setDeals(await dealsService.fetchDeals());
+    } catch (error) {
       console.error("Error fetching deals:", error);
     } finally {
       setIsLoading(false);

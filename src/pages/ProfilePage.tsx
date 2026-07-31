@@ -6,19 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import * as profilesService from "@/services/profiles.service";
+import type { Profile } from "@/services/profiles.service";
 import { toast } from "sonner";
 import { Loader2, User, Mail, Building2, Calendar, Camera, Upload } from "lucide-react";
-
-interface Profile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  company_name: string | null;
-  avatar_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -38,21 +29,18 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     if (!user) return;
-    
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
 
-    if (error) {
+    setLoading(true);
+    try {
+      const data = await profilesService.fetchProfile(user.id);
+      if (data) {
+        setProfile(data);
+        setFullName(data.full_name || "");
+        setCompanyName(data.company_name || "");
+      }
+    } catch (error) {
       console.error("Error fetching profile:", error);
       toast.error("Failed to load profile");
-    } else if (data) {
-      setProfile(data);
-      setFullName(data.full_name || "");
-      setCompanyName(data.company_name || "");
     }
     setLoading(false);
   };
@@ -76,43 +64,8 @@ export default function ProfilePage() {
     setUploadingAvatar(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(fileName);
-
-      const avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
-      // Update profile with avatar URL
-      if (profile) {
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
-          .eq("user_id", user.id);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from("profiles")
-          .insert({
-            user_id: user.id,
-            avatar_url: avatarUrl,
-          });
-
-        if (insertError) throw insertError;
-      }
+      const avatarUrl = await profilesService.uploadAvatar(user.id, file);
+      await profilesService.upsertProfile(user.id, !!profile, { avatar_url: avatarUrl });
 
       toast.success("Avatar updated successfully");
       fetchProfile();
@@ -131,43 +84,19 @@ export default function ProfilePage() {
     if (!user) return;
 
     setSaving(true);
-    
-    const profileData = {
-      user_id: user.id,
-      full_name: fullName || null,
-      company_name: companyName || null,
-      updated_at: new Date().toISOString(),
-    };
 
-    if (profile) {
-      // Update existing profile
-      const { error } = await supabase
-        .from("profiles")
-        .update(profileData)
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("Error updating profile:", error);
-        toast.error("Failed to update profile");
-      } else {
-        toast.success("Profile updated successfully");
-        fetchProfile();
-      }
-    } else {
-      // Insert new profile
-      const { error } = await supabase
-        .from("profiles")
-        .insert(profileData);
-
-      if (error) {
-        console.error("Error creating profile:", error);
-        toast.error("Failed to create profile");
-      } else {
-        toast.success("Profile created successfully");
-        fetchProfile();
-      }
+    try {
+      await profilesService.upsertProfile(user.id, !!profile, {
+        full_name: fullName || null,
+        company_name: companyName || null,
+      });
+      toast.success(profile ? "Profile updated successfully" : "Profile created successfully");
+      fetchProfile();
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error(profile ? "Failed to update profile" : "Failed to create profile");
     }
-    
+
     setSaving(false);
   };
 

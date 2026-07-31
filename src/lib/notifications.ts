@@ -1,4 +1,6 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUser } from "@/services/auth.service";
+import { fetchProfile } from "@/services/profiles.service";
+import { invokeSendNotification } from "@/services/notifications.service";
 
 interface DealNotificationData {
   dealTitle: string;
@@ -13,34 +15,24 @@ interface PropertyNotificationData {
 
 export async function sendDealStageNotification(data: DealNotificationData) {
   try {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user?.email) {
+    const user = await getCurrentUser();
+    if (!user?.email) {
       console.log("No user email found, skipping notification");
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
+    const profile = await fetchProfile(user.id);
 
-    const response = await supabase.functions.invoke("send-notification", {
-      body: {
-        type: "deal_stage_change",
-        recipientEmail: userData.user.email,
-        recipientName: profile?.full_name || undefined,
-        dealTitle: data.dealTitle,
-        oldStage: data.oldStage,
-        newStage: data.newStage,
-      },
+    await invokeSendNotification({
+      type: "deal_stage_change",
+      recipientEmail: user.email,
+      recipientName: profile?.full_name || undefined,
+      dealTitle: data.dealTitle,
+      oldStage: data.oldStage,
+      newStage: data.newStage,
     });
 
-    if (response.error) {
-      console.error("Failed to send notification:", response.error);
-    } else {
-      console.log("Deal stage notification sent successfully");
-    }
+    console.log("Deal stage notification sent successfully");
   } catch (error) {
     console.error("Error sending deal notification:", error);
   }
@@ -50,33 +42,23 @@ export async function sendPropertyMilestoneNotification(
   data: PropertyNotificationData
 ) {
   try {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user?.email) {
+    const user = await getCurrentUser();
+    if (!user?.email) {
       console.log("No user email found, skipping notification");
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
+    const profile = await fetchProfile(user.id);
 
-    const response = await supabase.functions.invoke("send-notification", {
-      body: {
-        type: "property_milestone",
-        recipientEmail: userData.user.email,
-        recipientName: profile?.full_name || undefined,
-        propertyAddress: data.propertyAddress,
-        milestone: data.milestone,
-      },
+    await invokeSendNotification({
+      type: "property_milestone",
+      recipientEmail: user.email,
+      recipientName: profile?.full_name || undefined,
+      propertyAddress: data.propertyAddress,
+      milestone: data.milestone,
     });
 
-    if (response.error) {
-      console.error("Failed to send notification:", response.error);
-    } else {
-      console.log("Property milestone notification sent successfully");
-    }
+    console.log("Property milestone notification sent successfully");
   } catch (error) {
     console.error("Error sending property notification:", error);
   }

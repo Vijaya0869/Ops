@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchPropertiesSummary } from "@/services/properties.service";
 import { Building2, DollarSign, TrendingUp, Home, Loader2 } from "lucide-react";
 
 interface PortfolioStatsData {
@@ -22,13 +22,7 @@ export function PortfolioStats() {
 
   const fetchStats = async () => {
     try {
-      const { data, error } = await supabase
-        .from("properties")
-        .select("purchase_price, arv, loan_amount, monthly_rent, status");
-
-      if (error) throw error;
-
-      const properties = data || [];
+      const properties = await fetchPropertiesSummary();
       const ownedStatuses = ["owned", "in_rehab", "listed", "rental"];
       const ownedProperties = properties.filter((p) =>
         ownedStatuses.includes(p.status || "")

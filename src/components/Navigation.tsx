@@ -29,7 +29,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchProfile as fetchProfileService } from "@/services/profiles.service";
 
 const navigationItems = [
   { icon: LayoutDashboard, label: "Overview", path: "/home" },
@@ -118,11 +118,7 @@ export function Navigation() {
 
   const fetchProfile = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const data = await fetchProfileService(user.id);
     if (data) setProfile(data);
   };
 
