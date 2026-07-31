@@ -1,6 +1,7 @@
 import { PropertyStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
-  IsDateString,
+  IsDate,
   IsEnum,
   IsInt,
   IsNumber,
@@ -37,8 +38,8 @@ export class CreatePropertyDto {
 
   @IsOptional() @IsString() lenderName?: string;
   @IsOptional() @IsEnum(PropertyStatus) status?: PropertyStatus;
-  @IsOptional() @IsDateString() acquisitionDate?: string;
-  @IsOptional() @IsDateString() saleDate?: string;
+  @IsOptional() @Type(() => Date) @IsDate() acquisitionDate?: Date;
+  @IsOptional() @Type(() => Date) @IsDate() saleDate?: Date;
   @IsOptional() @IsString() notes?: string;
   @IsOptional() @IsString() mlsNumber?: string;
 }
