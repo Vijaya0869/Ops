@@ -42,14 +42,14 @@ const AuthPage = () => {
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname || "/home";
 
   useEffect(() => {
-    const subscription = authService.onAuthStateChange((session) => {
-      if (session?.user) {
+    const subscription = authService.onAuthStateChange((user) => {
+      if (user) {
         navigate(from, { replace: true });
       }
     });
 
-    authService.getSession().then((session) => {
-      if (session?.user) {
+    authService.getSession().then((user) => {
+      if (user) {
         navigate(from, { replace: true });
       }
     });
