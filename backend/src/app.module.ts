@@ -16,6 +16,8 @@ import { TenantsModule } from './tenants/tenants.module';
 import { RentPaymentsModule } from './rent-payments/rent-payments.module';
 import { DealCostsModule } from './deal-costs/deal-costs.module';
 import { DealAnalysesModule } from './deal-analyses/deal-analyses.module';
+import { PropertyPhotosModule } from './property-photos/property-photos.module';
+import { PropertyDocumentsModule } from './property-documents/property-documents.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { DealAnalysesModule } from './deal-analyses/deal-analyses.module';
     RentPaymentsModule,
     DealCostsModule,
     DealAnalysesModule,
+    PropertyPhotosModule,
+    PropertyDocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,8 +6,20 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
+import { publicUrlFor } from '../common/upload.util';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+
+const PROFILE_SELECT = {
+  id: true,
+  email: true,
+  fullName: true,
+  companyName: true,
+  avatarUrl: true,
+  createdAt: true,
+  updatedAt: true,
+};
 
 @Injectable()
 export class AuthService {
@@ -45,6 +57,29 @@ export class AuthService {
     }
 
     return this.buildAuthResponse(user.id, user.email);
+  }
+
+  getProfile(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: PROFILE_SELECT,
+    });
+  }
+
+  updateProfile(userId: string, dto: UpdateProfileDto) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: dto,
+      select: PROFILE_SELECT,
+    });
+  }
+
+  updateAvatar(userId: string, file: Express.Multer.File) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: publicUrlFor('avatars', file.filename) },
+      select: PROFILE_SELECT,
+    });
   }
 
   private buildAuthResponse(userId: string, email: string) {
