@@ -4,58 +4,54 @@ import { RenovationExpenses } from "@/components/financials/RenovationExpenses";
 import { TimePeriodDropdown, TimePeriod } from "@/components/ui/time-period-dropdown";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { useProjects } from "@/hooks/useProjects";
+import { useRenovationItems } from "@/hooks/useRenovationItems";
 
 export default function RenovationsPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("1month");
+  const { projects } = useProjects();
+  const { renovationItems } = useRenovationItems();
 
   const downloadRenovationReport = () => {
-    // Mock report generation - replace with actual implementation
+    const totalBudget = projects.reduce((sum, p) => sum + (p.budget ?? 0), 0);
+    const totalActual = projects.reduce((sum, p) => sum + (p.actualCost ?? 0), 0);
+    const variance = totalBudget > 0 ? ((totalActual - totalBudget) / totalBudget) * 100 : 0;
+
     const reportData = `Renovation Expenses Report - ${new Date().toLocaleDateString()}
-    
-Time Period: ${timePeriod}
 
 SUMMARY
 -------
-Total Projected Costs: $88,000
-Total Actual Costs: $41,700
-Budget Variance: -52.6%
-Active Projects: 1
+Total Budget: $${totalBudget.toLocaleString()}
+Total Actual Costs: $${totalActual.toLocaleString()}
+Budget Variance: ${variance > 0 ? "+" : ""}${variance.toFixed(1)}%
+Active Projects: ${projects.filter((p) => p.status === "in_progress").length}
 
 PROJECT BREAKDOWN
 -----------------
-Kitchen Renovation - 123 Main St
-Status: Completed
-Projected: $25,000 | Actual: $27,500 (+10.0%)
-Timeline: 31 days (est.) | 36 days (actual) (+16.1%)
+${projects
+  .map(
+    (p) =>
+      `${p.name}\nStatus: ${p.status}\nBudget: $${(p.budget ?? 0).toLocaleString()} | Actual: $${(p.actualCost ?? 0).toLocaleString()}`,
+  )
+  .join("\n\n")}
 
-Bathroom Remodel - 456 Oak Ave  
-Status: In Progress
-Projected: $18,000 | Actual: $14,200 (20 days elapsed)
-Timeline: 29 days (est.) | 20 days (current)
-
-Full Rehab - 789 Pine St
-Status: Planning
-Projected: $45,000 | Actual: $0 (not started)
-Timeline: 61 days (est.)
-
-LABOR VS MATERIALS
-------------------
-Kitchen Renovation:
-- Labor: $15,000 (proj.) | $16,800 (actual)
-- Materials: $10,000 (proj.) | $10,700 (actual)
-
-Bathroom Remodel:
-- Labor: $12,000 (proj.) | $9,500 (actual to date)
-- Materials: $6,000 (proj.) | $4,700 (actual to date)
+RENOVATION ITEMS
+----------------
+${renovationItems
+  .map(
+    (i) =>
+      `${i.category}: Estimated $${i.estimatedCost.toLocaleString()}${i.actualCost != null ? ` | Actual $${i.actualCost.toLocaleString()}` : ""}`,
+  )
+  .join("\n")}
 
 Report generated on ${new Date().toLocaleString()}
-    `;
+`;
 
-    const blob = new Blob([reportData], { type: 'text/plain' });
+    const blob = new Blob([reportData], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `renovation-expenses-report-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `renovation-expenses-report-${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -65,19 +61,16 @@ Report generated on ${new Date().toLocaleString()}
   return (
     <div className="flex h-screen bg-background">
       <Navigation />
-      
+
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Renovation Expenses</h1>
-              <p className="text-muted-foreground">Track projected vs actual costs, labor/materials breakdown, and timeline performance</p>
+              <p className="text-muted-foreground">Track budget vs actual costs and timeline performance</p>
             </div>
             <div className="flex gap-3">
-              <TimePeriodDropdown 
-                value={timePeriod} 
-                onValueChange={setTimePeriod} 
-              />
+              <TimePeriodDropdown value={timePeriod} onValueChange={setTimePeriod} />
               <Button variant="outline" className="gap-2" onClick={downloadRenovationReport}>
                 <Download className="h-4 w-4" />
                 Download Report

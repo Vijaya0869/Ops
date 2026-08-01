@@ -1,0 +1,68 @@
+{
+  "userEmail": "vijjikilaru@dreamavenue.ai",
+  "expenses": [
+    { "propertyAddress": "88 Willow Creek Ln", "category": "holding", "description": "Property tax", "amount": 950, "expenseDate": "2026-01-15" },
+    { "propertyAddress": "88 Willow Creek Ln", "category": "holding", "description": "Insurance", "amount": 600, "expenseDate": "2026-01-15" },
+    { "propertyAddress": "88 Willow Creek Ln", "category": "rentalOps", "description": "Maintenance", "amount": 300, "expenseDate": "2026-02-10" },
+    { "propertyAddress": "15 Birchwood Pl", "category": "holding", "description": "Property tax", "amount": 1100, "expenseDate": "2026-01-20" },
+    { "propertyAddress": "15 Birchwood Pl", "category": "rentalOps", "description": "PM fees", "amount": 200, "expenseDate": "2026-02-05" },
+    { "propertyAddress": "504 Prairie Dog Rd", "category": "holding", "description": "Insurance", "amount": 700, "expenseDate": "2026-01-25" },
+    { "propertyAddress": "412 Cedar Ridge Dr", "category": "acquisition", "description": "Title fees", "amount": 1800, "expenseDate": "2025-09-12" },
+    { "propertyAddress": "412 Cedar Ridge Dr", "category": "acquisition", "description": "Closing costs", "amount": 1200, "expenseDate": "2025-09-12" },
+    { "propertyAddress": "930 Sunset Blvd", "category": "acquisition", "description": "Wholesale fee", "amount": 5000, "expenseDate": "2025-01-10" },
+    { "propertyAddress": "930 Sunset Blvd", "category": "selling", "description": "Realtor commissions", "amount": 15000, "expenseDate": "2025-08-22" },
+    { "propertyAddress": "930 Sunset Blvd", "category": "selling", "description": "Staging", "amount": 2200, "expenseDate": "2025-08-10" }
+  ],
+  "income": [
+    { "propertyAddress": "88 Willow Creek Ln", "category": "rental", "description": "Rent - January", "amount": 1800, "incomeDate": "2026-01-01" },
+    { "propertyAddress": "88 Willow Creek Ln", "category": "rental", "description": "Rent - February", "amount": 1800, "incomeDate": "2026-02-01" },
+    { "propertyAddress": "15 Birchwood Pl", "category": "rental", "description": "Rent - January", "amount": 2100, "incomeDate": "2026-01-01" },
+    { "propertyAddress": "15 Birchwood Pl", "category": "rental", "description": "Rent - February", "amount": 2100, "incomeDate": "2026-02-01" },
+    { "propertyAddress": "504 Prairie Dog Rd", "category": "rental", "description": "Rent - February", "amount": 2600, "incomeDate": "2026-02-01" },
+    { "propertyAddress": "930 Sunset Blvd", "category": "flip", "description": "Flip sale proceeds", "amount": 40000, "incomeDate": "2025-08-22" }
+  ],
+  "projects": [
+    {
+      "propertyAddress": "2210 Magnolia Ave",
+      "name": "Full Gut Renovation",
+      "status": "in_progress",
+      "budget": 60000,
+      "actualCost": 35000,
+      "startDate": "2026-02-18",
+      "endDate": "2026-06-01",
+      "renovationItems": [
+        { "category": "Cabinets", "estimatedCost": 6700, "actualCost": 7100 },
+        { "category": "Countertops (Granite/Quartz)", "estimatedCost": 2600, "actualCost": 2500 },
+        { "category": "Roof - Tear Off & Shingles", "estimatedCost": 6300, "actualCost": 6800 },
+        { "category": "Whole-House Rewire/Circuits", "estimatedCost": 5000, "actualCost": 4800 },
+        { "category": "Painting - Interior", "estimatedCost": 3000, "actualCost": null }
+      ]
+    }
+  ],
+  "lenders": [
+    { "name": "Guild Mortgage", "contactName": "Sarah Lin", "lenderType": "Conventional" },
+    { "name": "Hard Money Partners LLC", "contactName": "Marcus Webb", "lenderType": "Hard Money" }
+  ],
+  "loans": [
+    {
+      "propertyAddress": "412 Cedar Ridge Dr",
+      "lenderName": "Guild Mortgage",
+      "principal": 170000,
+      "interestRate": 6.5,
+      "termMonths": 360,
+      "monthlyPayment": 1074,
+      "startDate": "2025-09-12",
+      "status": "active"
+    },
+    {
+      "propertyAddress": "2210 Magnolia Ave",
+      "lenderName": "Hard Money Partners LLC",
+      "principal": 280000,
+      "interestRate": 7.1,
+      "termMonths": 12,
+      "monthlyPayment": 2500,
+      "startDate": "2026-02-18",
+      "status": "active"
+    }
+  ]
+}
