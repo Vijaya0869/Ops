@@ -3,19 +3,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Save, Download } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calculator, Save, Download, Loader2 } from "lucide-react";
+import { useDeals } from "@/hooks/useDeals";
+import { useDealAnalyses } from "@/hooks/useDealAnalyses";
+
+type Category = "location" | "condition" | "financial" | "risk";
 
 interface DecisionCriterion {
   criterion: string;
+  category: Category;
   weight: number;
   guidance: string;
   score: number;
   weightedScore: number;
 }
 
+const CATEGORY_LABELS: Record<Category, string> = {
+  location: "Location",
+  condition: "Condition",
+  financial: "Financial",
+  risk: "Risk",
+};
+
 const defaultCriteria: DecisionCriterion[] = [
   {
     criterion: "Location quality (neighborhood tier, school/crime trend, comps within 0.5–1.0 mi)",
+    category: "location",
     weight: 8,
     guidance: "5=Top quartile for submarket; 3=Average; 1=Bottom quartile",
     score: 0,
@@ -23,6 +37,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Physical condition / effective age (structure, roof, MEPs)",
+    category: "condition",
     weight: 6,
     guidance: "5=Turnkey/light; 3=Medium rehab; 1=Heavy/gut or major structural",
     score: 0,
@@ -30,6 +45,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Layout & unit functionality (bed/bath count, flow, parking)",
+    category: "condition",
     weight: 4,
     guidance: "5=Optimal layouts & parking; 3=Serviceable; 1=Obsolete/awkward",
     score: 0,
@@ -37,6 +53,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Code/zoning/environmental risk (violations, flood, lead/asbestos)",
+    category: "risk",
     weight: 4,
     guidance: "5=None/cleared; 3=Minor; 1=Material unresolved",
     score: 0,
@@ -44,6 +61,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Value-add scope clarity (SOW defined, permits path, contingency)",
+    category: "condition",
     weight: 5,
     guidance: "5=Detailed SOW, permits simple; 3=Some ambiguity; 1=Unclear/high risk",
     score: 0,
@@ -51,6 +69,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Exit flexibility (sell, refi, rent—multiple viable paths)",
+    category: "financial",
     weight: 3,
     guidance: "5=3 exits viable; 3=2 exits; 1=single exit high risk",
     score: 0,
@@ -58,6 +77,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Tax/insurance stability (reassessment risk, carrier availability)",
+    category: "risk",
     weight: 5,
     guidance: "5=Low volatility; 3=Moderate; 1=High/unknown",
     score: 0,
@@ -65,6 +85,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "All-in basis vs. stabilized value (LTC/LTV; % of ARV incl. capex)",
+    category: "financial",
     weight: 8,
     guidance: "5<=70% of ARV; 3=71–78%; 1>=79%",
     score: 0,
@@ -72,6 +93,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "DSCR (stabilized, amortizing) at current rates",
+    category: "financial",
     weight: 7,
     guidance: "5>=1.35x; 3=1.25–1.34x; 1<1.25x",
     score: 0,
@@ -79,6 +101,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Cash buffer & liquidity after close (months of fixed costs)",
+    category: "financial",
     weight: 5,
     guidance: "5>=6 months; 3=3–5 months; 1<3 months",
     score: 0,
@@ -86,6 +109,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Debt structure (term, rate risk, prepay, recourse)",
+    category: "financial",
     weight: 5,
     guidance: "5=Fixed/limited recourse/favorable prepay; 3=mixed; 1=short/variable/recourse",
     score: 0,
@@ -93,6 +117,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Sensitivity resilience (rent -5% & rate +100 bps stress)",
+    category: "risk",
     weight: 5,
     guidance: "5=Positive CF; 3=Breakeven; 1=Negative CF",
     score: 0,
@@ -100,6 +125,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Transaction costs & fees (points, lender fees, carry)",
+    category: "financial",
     weight: 5,
     guidance: "5=Low; 3=Moderate; 1=High",
     score: 0,
@@ -107,6 +133,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Rent comps vs. HUD FMR/SAFMR & demand (DOM, absorption)",
+    category: "location",
     weight: 7,
     guidance: "5=Market rents strong & ≥FMR; 3=at FMR; 1< FMR with weak demand",
     score: 0,
@@ -114,6 +141,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Vacancy & tenant pool quality (screening yield, income mix)",
+    category: "location",
     weight: 6,
     guidance: "5=Deep pool; 3=Average; 1=Thin/problematic",
     score: 0,
@@ -121,6 +149,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Unit features vs. competition (W/D, AC, parking, finishes)",
+    category: "condition",
     weight: 4,
     guidance: "5=Clearly superior; 3=Parity; 1=Inferior",
     score: 0,
@@ -128,6 +157,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Regulatory constraints (rent control, inspections cadence)",
+    category: "risk",
     weight: 3,
     guidance: "5=None/light; 3=Moderate; 1=Heavy",
     score: 0,
@@ -135,6 +165,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Execution complexity (permits, trades availability, lead times)",
+    category: "condition",
     weight: 5,
     guidance: "5=Low; 3=Moderate; 1=High",
     score: 0,
@@ -142,6 +173,7 @@ const defaultCriteria: DecisionCriterion[] = [
   },
   {
     criterion: "Distance/logistics & management intensity",
+    category: "location",
     weight: 5,
     guidance: "5=Near base/low touch; 3=manageable; 1=far/high touch",
     score: 0,
@@ -149,20 +181,55 @@ const defaultCriteria: DecisionCriterion[] = [
   }
 ];
 
+function scoreLabel(percentage: number) {
+  if (percentage >= 80) return "Excellent";
+  if (percentage >= 60) return "Good";
+  if (percentage >= 40) return "Fair";
+  return "Poor";
+}
+
 export function DecisionMatrix() {
-  const [criteria, setCriteria] = useState<DecisionCriterion[]>(defaultCriteria);
-  const [propertyAddress, setPropertyAddress] = useState("");
+  const [criteria, setCriteria] = useState<DecisionCriterion[]>(() =>
+    defaultCriteria.map((item) => ({ ...item })),
+  );
+  const [selectedDealId, setSelectedDealId] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const { deals } = useDeals();
+  const { dealAnalyses, addDealAnalysis } = useDealAnalyses();
 
   const updateScore = (index: number, score: number) => {
-    const newCriteria = [...criteria];
-    newCriteria[index].score = score;
-    newCriteria[index].weightedScore = score * newCriteria[index].weight;
-    setCriteria(newCriteria);
+    setCriteria((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, score, weightedScore: score * item.weight } : item)),
+    );
+  };
+
+  const updateWeight = (index: number, weight: number) => {
+    setCriteria((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, weight, weightedScore: item.score * weight } : item)),
+    );
+  };
+
+  const resetWeights = () => {
+    setCriteria((prev) =>
+      prev.map((item, index) => ({
+        ...item,
+        weight: defaultCriteria[index].weight,
+        weightedScore: item.score * defaultCriteria[index].weight,
+      })),
+    );
   };
 
   const totalWeightedScore = criteria.reduce((sum, item) => sum + item.weightedScore, 0);
   const maxPossibleScore = criteria.reduce((sum, item) => sum + (item.weight * 5), 0);
   const scorePercentage = maxPossibleScore > 0 ? (totalWeightedScore / maxPossibleScore) * 100 : 0;
+
+  const categoryScore = (category: Category) => {
+    const items = criteria.filter((c) => c.category === category);
+    const max = items.reduce((sum, c) => sum + c.weight * 5, 0);
+    const total = items.reduce((sum, c) => sum + c.weightedScore, 0);
+    return max > 0 ? (total / max) * 100 : 0;
+  };
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return "text-green-600";
@@ -171,10 +238,59 @@ export function DecisionMatrix() {
   };
 
   const getScoreBadge = (percentage: number) => {
-    if (percentage >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
-    if (percentage >= 60) return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>;
-    if (percentage >= 40) return <Badge className="bg-orange-100 text-orange-800">Fair</Badge>;
-    return <Badge className="bg-red-100 text-red-800">Poor</Badge>;
+    const label = scoreLabel(percentage);
+    const styles: Record<string, string> = {
+      Excellent: "bg-green-100 text-green-800",
+      Good: "bg-yellow-100 text-yellow-800",
+      Fair: "bg-orange-100 text-orange-800",
+      Poor: "bg-red-100 text-red-800",
+    };
+    return <Badge className={styles[label]}>{label}</Badge>;
+  };
+
+  const selectedDeal = deals.find((d) => d.id === selectedDealId);
+  const priorAnalyses = dealAnalyses
+    .filter((a) => a.dealId === selectedDealId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const handleSave = async () => {
+    if (!selectedDealId) return;
+    setSaving(true);
+    await addDealAnalysis({
+      dealId: selectedDealId,
+      locationScore: categoryScore("location"),
+      conditionScore: categoryScore("condition"),
+      financialScore: categoryScore("financial"),
+      riskScore: categoryScore("risk"),
+      totalScore: scorePercentage,
+      recommendation: scoreLabel(scorePercentage),
+      notes: JSON.stringify(criteria.map((c) => ({ criterion: c.criterion, weight: c.weight, score: c.score }))),
+    });
+    setSaving(false);
+  };
+
+  const handleExport = () => {
+    const lines = [
+      `Acquisition Decision Matrix`,
+      selectedDeal ? `Deal: ${selectedDeal.title}` : "Deal: (none selected)",
+      `Generated: ${new Date().toLocaleDateString()}`,
+      ``,
+      `Overall Score: ${scorePercentage.toFixed(1)}% (${scoreLabel(scorePercentage)})`,
+      `Location: ${categoryScore("location").toFixed(1)}%`,
+      `Condition: ${categoryScore("condition").toFixed(1)}%`,
+      `Financial: ${categoryScore("financial").toFixed(1)}%`,
+      `Risk: ${categoryScore("risk").toFixed(1)}%`,
+      ``,
+      `Criterion,Category,Weight,Score,Weighted Score`,
+      ...criteria.map((c) => `"${c.criterion.replace(/"/g, '""')}",${CATEGORY_LABELS[c.category]},${c.weight},${c.score},${c.weightedScore}`),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `decision-matrix-${selectedDeal?.title.replace(/\s+/g, "-") || "export"}-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -188,15 +304,18 @@ export function DecisionMatrix() {
                 Acquisition Decision Matrix
               </CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                Score each criterion from 1-5 to evaluate property acquisition potential
+                Score each criterion from 1-5, and adjust its weight (0-10) to match how much it matters for this deal
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Save className="h-4 w-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={resetWeights}>
+                Reset Weights
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={!selectedDealId || saving}>
+                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
                 Save
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
@@ -205,14 +324,41 @@ export function DecisionMatrix() {
         </CardHeader>
         <CardContent>
           <div className="mb-6">
-            <label className="text-sm font-medium mb-2 block">Property Address</label>
-            <Input
-              placeholder="Enter property address..."
-              value={propertyAddress}
-              onChange={(e) => setPropertyAddress(e.target.value)}
-              className="max-w-md"
-            />
+            <label className="text-sm font-medium mb-2 block">Deal</label>
+            <Select value={selectedDealId} onValueChange={setSelectedDealId}>
+              <SelectTrigger className="max-w-md">
+                <SelectValue placeholder={deals.length > 0 ? "Select a deal to score..." : "No deals yet"} />
+              </SelectTrigger>
+              <SelectContent>
+                {deals.map((deal) => (
+                  <SelectItem key={deal.id} value={deal.id}>
+                    {deal.title}{deal.address ? ` — ${deal.address}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!selectedDealId && (
+              <p className="text-xs text-muted-foreground mt-1">Select a deal to save this analysis against it.</p>
+            )}
           </div>
+
+          {priorAnalyses.length > 0 && (
+            <div className="mb-6 p-4 border rounded-lg">
+              <h4 className="font-medium mb-2 text-sm">Previous Scores for This Deal</h4>
+              <div className="space-y-1">
+                {priorAnalyses.map((a) => (
+                  <div key={a.id} className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {new Date(a.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                    <span>
+                      {a.totalScore?.toFixed(1)}% — {a.recommendation}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mb-6 p-4 bg-muted rounded-lg">
             <div className="flex items-center justify-between">
@@ -228,6 +374,16 @@ export function DecisionMatrix() {
                 </div>
                 {getScoreBadge(scorePercentage)}
               </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border/50">
+              {(Object.keys(CATEGORY_LABELS) as Category[]).map((cat) => (
+                <div key={cat} className="text-center">
+                  <div className="text-xs text-muted-foreground">{CATEGORY_LABELS[cat]}</div>
+                  <div className={`font-semibold ${getScoreColor(categoryScore(cat))}`}>
+                    {categoryScore(cat).toFixed(0)}%
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -249,7 +405,14 @@ export function DecisionMatrix() {
                       <div className="font-medium text-sm">{item.criterion}</div>
                     </td>
                     <td className="p-3 text-center">
-                      <Badge variant="outline">{item.weight}</Badge>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={item.weight}
+                        onChange={(e) => updateWeight(index, Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
+                        className="w-16 text-center mx-auto"
+                      />
                     </td>
                     <td className="p-3 text-sm text-muted-foreground">
                       {item.guidance}
