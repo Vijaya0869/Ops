@@ -543,28 +543,6 @@ const DocumentsPage = () => {
       }
     });
 
-    // Add some default SOW items from CMH pricing profile for demonstration
-    const defaultItems = [
-      { category: "Kitchen", task: "Replace cabinets", tradeType: "carpenter", pricing: pricingProfiles.Kitchen.Cabinets },
-      { category: "Kitchen", task: "Install countertops", tradeType: "carpenter", pricing: pricingProfiles.Kitchen["Countertops (Granite/Quartz)"] },
-      { category: "Bathrooms", task: "Bathroom renovation", tradeType: "plumber", pricing: pricingProfiles.Bathrooms["Tub/Shower Pan"] },
-      { category: "Electrical", task: "Service Panel Upgrade", tradeType: "electrician", pricing: pricingProfiles.Electrical["Service Panel Upgrade"] },
-      { category: "Plumbing", task: "Water Heater Installation", tradeType: "plumber", pricing: pricingProfiles.Plumbing["Water Heater"] }
-    ];
-
-    defaultItems.forEach((item, index) => {
-      sowItems.push({
-        id: taskId++,
-        category: item.category,
-        task: item.task,
-        tradeType: item.tradeType,
-        duration: getDurationFromTask(item.task),
-        laborCost: item.pricing.laborCosts,
-        materialCost: item.pricing.materialCosts,
-        status: "pending"
-      });
-    });
-
     return sowItems;
   };
 
@@ -1136,19 +1114,27 @@ const DocumentsPage = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sowData.map((task) => (
-                        <TableRow key={task.id}>
-                          <TableCell>
-                            <Badge variant="outline">{task.category}</Badge>
+                      {sowData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                            No tasks yet — mark inspection items "Fair" or "Poor" and click "Generate SOW" above.
                           </TableCell>
-                          <TableCell className="font-medium">{task.task}</TableCell>
-                          <TableCell>{getContractorName(task)}</TableCell>
-                          <TableCell>{task.duration}</TableCell>
-                          <TableCell>${task.laborCost.toLocaleString()}</TableCell>
-                          <TableCell>${task.materialCost.toLocaleString()}</TableCell>
-                          <TableCell>{getTaskStatusBadge(task.status)}</TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        sowData.map((task) => (
+                          <TableRow key={task.id}>
+                            <TableCell>
+                              <Badge variant="outline">{task.category}</Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">{task.task}</TableCell>
+                            <TableCell>{getContractorName(task)}</TableCell>
+                            <TableCell>{task.duration}</TableCell>
+                            <TableCell>${task.laborCost.toLocaleString()}</TableCell>
+                            <TableCell>${task.materialCost.toLocaleString()}</TableCell>
+                            <TableCell>{getTaskStatusBadge(task.status)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                    <div className="mt-4 flex justify-between items-center">
@@ -1343,7 +1329,7 @@ const DocumentsPage = () => {
                       </div>
                       <div>
                         <span className="text-muted-foreground">Progress:</span>
-                        <div className="font-medium">{Math.round((sowData.filter(t => t.status === 'completed').length / sowData.length) * 100)}%</div>
+                        <div className="font-medium">{sowData.length > 0 ? Math.round((sowData.filter(t => t.status === 'completed').length / sowData.length) * 100) : 0}%</div>
                       </div>
                     </div>
                     <Button className="w-full flex items-center gap-2">
@@ -1368,15 +1354,24 @@ const DocumentsPage = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Actual Spent:</span>
-                        <span className="font-medium">${(adjustedTotal * 0.85).toLocaleString()}</span>
+                        <span className="font-medium">
+                          ${sowData
+                            .filter((t) => t.status === "completed")
+                            .reduce((sum, t) => sum + t.laborCost + t.materialCost, 0)
+                            .toLocaleString()}
+                        </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Variance:</span>
-                        <span className="font-medium text-success">-${(adjustedTotal * 0.15).toLocaleString()}</span>
+                      <div className="text-xs text-muted-foreground">
+                        Based on completed tasks' estimated cost — this tool doesn't track invoiced
+                        amounts separately yet.
                       </div>
                     </div>
-                    <Progress value={85} />
-                    <div className="text-sm text-muted-foreground text-center">85% of budget utilized</div>
+                    <Progress value={sowData.length > 0 ? (sowData.filter((t) => t.status === "completed").length / sowData.length) * 100 : 0} />
+                    <div className="text-sm text-muted-foreground text-center">
+                      {sowData.length > 0
+                        ? `${sowData.filter((t) => t.status === "completed").length} of ${sowData.length} tasks completed`
+                        : "No tasks yet"}
+                    </div>
                     <Button className="w-full flex items-center gap-2">
                       <Download className="h-4 w-4" />
                       Export Budget Report (Excel)
@@ -1395,19 +1390,25 @@ const DocumentsPage = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Project Start:</span>
-                        <span className="font-medium">Jan 15, 2024</span>
+                        <span className="font-medium">
+                          {inspectionData.propertyDetails.date.value || "Not set"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Est. Completion:</span>
-                        <span className="font-medium">Mar 15, 2024</span>
+                        <span className="text-muted-foreground">Tasks In Progress:</span>
+                        <span className="font-medium">{sowData.filter((t) => t.status === "in-progress").length}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Days Remaining:</span>
-                        <span className="font-medium">32 days</span>
+                        <span className="text-muted-foreground">Tasks Remaining:</span>
+                        <span className="font-medium">{sowData.filter((t) => t.status === "pending").length}</span>
                       </div>
                     </div>
-                    <Progress value={45} />
-                    <div className="text-sm text-muted-foreground text-center">45% timeline complete</div>
+                    <Progress value={sowData.length > 0 ? (sowData.filter((t) => t.status === "completed").length / sowData.length) * 100 : 0} />
+                    <div className="text-sm text-muted-foreground text-center">
+                      {sowData.length > 0
+                        ? `${Math.round((sowData.filter((t) => t.status === "completed").length / sowData.length) * 100)}% of tasks complete`
+                        : "No tasks yet"}
+                    </div>
                     <Button className="w-full flex items-center gap-2">
                       <Download className="h-4 w-4" />
                       Export Schedule Report
@@ -1424,11 +1425,17 @@ const DocumentsPage = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2 text-sm">
-                      <div>✅ Inspection completed</div>
-                      <div>✅ SOW approved</div>
-                      <div>✅ Budget finalized</div>
-                      <div>🔄 Construction in progress</div>
-                      <div>⏳ Final walkthrough pending</div>
+                      <div>{sowData.length > 0 ? "✅" : "⏳"} Inspection {sowData.length > 0 ? "completed" : "pending"}</div>
+                      <div>{sowData.length > 0 ? "✅" : "⏳"} SOW generated ({sowData.length} task{sowData.length === 1 ? "" : "s"})</div>
+                      <div>✅ Budget calculated (${adjustedTotal.toLocaleString()})</div>
+                      <div>
+                        {sowData.some((t) => t.status === "in-progress") ? "🔄" : "⏳"} Construction{" "}
+                        {sowData.some((t) => t.status === "in-progress") ? "in progress" : "not started"}
+                      </div>
+                      <div>
+                        {sowData.length > 0 && sowData.every((t) => t.status === "completed") ? "✅" : "⏳"} Final
+                        walkthrough {sowData.length > 0 && sowData.every((t) => t.status === "completed") ? "complete" : "pending"}
+                      </div>
                     </div>
                     <Button className="w-full flex items-center gap-2">
                       <Download className="h-4 w-4" />
