@@ -334,13 +334,13 @@ export function Navigation() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`w-full justify-start gap-3 transition-all duration-200 ${
-                        isActive 
-                          ? "bg-accent text-accent-foreground shadow-sm" 
+                      className={`w-full h-auto min-h-9 justify-start items-center gap-3 whitespace-normal text-left py-2 leading-snug transition-all duration-200 ${
+                        isActive
+                          ? "bg-accent text-accent-foreground shadow-sm"
                           : "text-foreground hover:bg-accent/15 hover:text-accent"
                       }`}
                     >
-                      <item.icon className="h-3 w-3" />
+                      <item.icon className="h-3 w-3 shrink-0" />
                       {item.label}
                     </Button>
                   </Link>

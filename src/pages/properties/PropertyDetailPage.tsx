@@ -11,6 +11,8 @@ import { PropertyPhotoUpload } from "@/components/properties/PropertyPhotoUpload
 import { PropertyDocumentUpload } from "@/components/properties/PropertyDocumentUpload";
 import { PropertyFormDialog } from "@/components/properties/PropertyFormDialog";
 import { usePropertyPhotos } from "@/hooks/usePropertyPhotos";
+import { useLoans } from "@/hooks/useLoans";
+import { currentDebtForProperty } from "@/lib/loan-utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
@@ -20,11 +22,12 @@ import {
   DollarSign,
   TrendingUp,
   Calendar,
-  Loader2,
   Image,
   FileText,
   Calculator,
 } from "lucide-react";
+import { StatTileSkeleton } from "@/components/ui/loading-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statusColors: Record<string, string> = {
   lead: "bg-slate-500",
@@ -54,6 +57,7 @@ export default function PropertyDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { photos, fetchPhotos } = usePropertyPhotos(id || null);
+  const { loans } = useLoans();
 
   useEffect(() => {
     if (id) {
@@ -129,8 +133,27 @@ export default function PropertyDetailPage() {
     return (
       <div className="flex min-h-screen bg-background">
         <Navigation />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <main className="flex-1 p-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start gap-4">
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <div className="space-y-2">
+                  <Skeleton className="h-7 w-64" />
+                  <Skeleton className="h-4 w-40" />
+                </div>
+              </div>
+              <Skeleton className="h-9 w-32" />
+            </div>
+
+            <Skeleton className="mb-6 h-64 w-full rounded-xl" />
+
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <StatTileSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </main>
       </div>
     );
@@ -145,18 +168,18 @@ export default function PropertyDetailPage() {
     (property.purchase_price || 0) +
     (property.actual_rehab_cost || property.rehab_budget || 0) +
     (property.holding_costs || 0);
-  const equity = (property.arv || 0) - (property.loan_amount || 0);
+  // Current loan balance: amortized from real Loan records where they
+  // exist, falling back to the static loan_amount field otherwise.
+  const loanBalance = currentDebtForProperty(property.id, loans, property.loan_amount || 0);
+  const equity = (property.arv || 0) - loanBalance;
   const potentialProfit = (property.arv || 0) - totalInvestment;
   const roi = totalInvestment > 0 ? (potentialProfit / totalInvestment) * 100 : 0;
   const cashFlow =
     (property.monthly_rent || 0) - (property.monthly_expenses || 0);
   const annualCashFlow = cashFlow * 12;
-  const cashOnCash =
-    property.purchase_price && property.loan_amount
-      ? (annualCashFlow /
-          (property.purchase_price - property.loan_amount)) *
-        100
-      : 0;
+  const cashOnCash = property.purchase_price
+    ? (annualCashFlow / (property.purchase_price - loanBalance)) * 100
+    : 0;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -344,10 +367,10 @@ export default function PropertyDetailPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        Loan Amount
+                        Loan Balance
                       </span>
                       <span className="font-medium">
-                        {formatCurrency(property.loan_amount)}
+                        {formatCurrency(loanBalance)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -451,9 +474,15 @@ export default function PropertyDetailPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Loan Amount</span>
+                      <span className="text-muted-foreground">Original Loan Amount</span>
                       <span className="font-medium">
                         {formatCurrency(property.loan_amount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Current Balance</span>
+                      <span className="font-medium">
+                        {formatCurrency(loanBalance)}
                       </span>
                     </div>
                     <div className="flex justify-between">

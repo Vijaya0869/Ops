@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TimePeriod } from "@/components/ui/time-period-dropdown";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { currentDebtForProperty } from "@/lib/loan-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   DollarSign, 
@@ -20,7 +21,7 @@ interface LenderManagementProps {
 }
 
 export function LenderManagement({ timePeriod }: LenderManagementProps) {
-  const { metrics, properties, loading } = useDashboardData();
+  const { metrics, properties, loans, loading } = useDashboardData();
 
   if (loading) {
     return (
@@ -40,9 +41,14 @@ export function LenderManagement({ timePeriod }: LenderManagementProps) {
     return `$${value.toFixed(0)}`;
   };
 
-  // Filter properties with loans
-  const propertiesWithLoans = properties.filter(p => p.loan_amount && p.loan_amount > 0);
-  const activeLoans = propertiesWithLoans.filter(p => 
+  // Current balance per property: amortized from real Loan records where
+  // they exist, falling back to the static loan_amount field otherwise.
+  const balanceFor = (p: (typeof properties)[number]) =>
+    currentDebtForProperty(p.id, loans, p.loan_amount || 0);
+
+  // Filter properties with an outstanding loan balance
+  const propertiesWithLoans = properties.filter(p => balanceFor(p) > 0);
+  const activeLoans = propertiesWithLoans.filter(p =>
     ['owned', 'in_rehab', 'listed', 'rental'].includes(p.status || '')
   );
 
@@ -53,7 +59,7 @@ export function LenderManagement({ timePeriod }: LenderManagementProps) {
       acc[lender] = { count: 0, amount: 0, totalRate: 0, properties: [] as string[] };
     }
     acc[lender].count++;
-    acc[lender].amount += p.loan_amount || 0;
+    acc[lender].amount += balanceFor(p);
     acc[lender].totalRate += p.interest_rate || 0;
     acc[lender].properties.push(p.address);
     return acc;
@@ -153,7 +159,8 @@ export function LenderManagement({ timePeriod }: LenderManagementProps) {
           {propertiesWithLoans.length > 0 ? (
             <div className="space-y-4">
               {propertiesWithLoans.map((property) => {
-                const ltv = property.arv ? ((property.loan_amount || 0) / property.arv * 100) : 0;
+                const currentBalance = balanceFor(property);
+                const ltv = property.arv ? (currentBalance / property.arv * 100) : 0;
                 return (
                   <div key={property.id} className="p-4 border border-border rounded-lg bg-panel">
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -163,8 +170,8 @@ export function LenderManagement({ timePeriod }: LenderManagementProps) {
                         <p className="text-xs text-muted-foreground mt-1">{property.lender_name || 'Unknown Lender'}</p>
                       </div>
                       <div>
-                        <p className="font-semibold text-accent">{formatCurrency(property.loan_amount || 0)}</p>
-                        <p className="text-sm text-muted-foreground">Loan Amount</p>
+                        <p className="font-semibold text-accent">{formatCurrency(currentBalance)}</p>
+                        <p className="text-sm text-muted-foreground">Loan Balance</p>
                         <p className="text-xs text-muted-foreground">{property.interest_rate || 0}% • {ltv.toFixed(0)}% LTV</p>
                       </div>
                       <div>

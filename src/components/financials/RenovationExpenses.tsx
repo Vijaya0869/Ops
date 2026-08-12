@@ -26,9 +26,18 @@ import {
 } from "recharts";
 import { DollarSign, Clock, AlertTriangle, Plus, Loader2 } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
-import type { Project, ProjectStatus } from "@/services/projects.service";
+import type { Project } from "@/services/projects.service";
 import { useRenovationItems } from "@/hooks/useRenovationItems";
 import { useProperties } from "@/hooks/useProperties";
+import { StatTileSkeleton, ListRowSkeletonGroup } from "@/components/ui/loading-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
+import {
+  STATUS_COLORS,
+  daysBetween,
+  projectActualCost as calcActualCost,
+  projectBudget as calcBudget,
+} from "@/lib/project-utils";
 
 // Typical renovation line-item costs, offered as presets when adding an item
 // rather than displayed as if they were your actual project data.
@@ -67,117 +76,8 @@ const PRESET_CATALOG: CostPreset[] = [
   { group: "Finals & Misc", subcategory: "Final Deep Cleaning", materialCost: 200, laborCost: 800 },
 ];
 
-const STATUS_COLORS: Record<ProjectStatus, string> = {
-  planned: "bg-muted",
-  in_progress: "bg-blue-500",
-  on_hold: "bg-warning",
-  completed: "bg-success",
-  cancelled: "bg-destructive",
-};
-
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
-}
-
-function daysBetween(a: Date, b: Date) {
-  return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
-}
-
-function AddProjectDialog({
-  properties,
-  onSubmit,
-}: {
-  properties: ReturnType<typeof useProperties>["properties"];
-  onSubmit: (data: {
-    propertyId: string;
-    name: string;
-    budget: number | null;
-    startDate: string | null;
-    endDate: string | null;
-  }) => Promise<unknown>;
-}) {
-  const [open, setOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [propertyId, setPropertyId] = useState("");
-  const [name, setName] = useState("");
-  const [budget, setBudget] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!propertyId || !name) return;
-    setSubmitting(true);
-    const result = await onSubmit({
-      propertyId,
-      name,
-      budget: budget ? parseFloat(budget) : null,
-      startDate: startDate || null,
-      endDate: endDate || null,
-    });
-    setSubmitting(false);
-    if (result) {
-      setName("");
-      setBudget("");
-      setStartDate("");
-      setEndDate("");
-      setOpen(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Project
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New Renovation Project</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Property</Label>
-            <Select value={propertyId} onValueChange={setPropertyId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select property" />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Project Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kitchen Renovation" required />
-          </div>
-          <div className="space-y-2">
-            <Label>Budget</Label>
-            <Input type="number" step="0.01" value={budget} onChange={(e) => setBudget(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Start Date</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>End Date (est.)</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={submitting || !propertyId || !name}>
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
 }
 
 function AddRenovationItemDialog({
@@ -313,28 +213,34 @@ function AddRenovationItemDialog({
 
 interface RenovationExpensesProps {
   className?: string;
+  dateRange?: { startDate: Date; endDate: Date };
 }
 
-export function RenovationExpenses({ className = "" }: RenovationExpensesProps) {
-  const { projects, loading: projectsLoading, addProject } = useProjects();
+export function RenovationExpenses({ className = "", dateRange }: RenovationExpensesProps) {
+  const { projects: allProjects, loading: projectsLoading, addProject } = useProjects();
   const { renovationItems, loading: itemsLoading, addRenovationItem } = useRenovationItems();
   const { properties, loading: propertiesLoading } = useProperties();
 
   const loading = projectsLoading || itemsLoading || propertiesLoading;
 
+  // Renovation items have no date of their own — only their parent project
+  // does (startDate/endDate) — so the time-period filter works at the
+  // project level: a project counts if its timeline overlaps the range.
+  const projects = dateRange
+    ? allProjects.filter((p) => {
+        if (!p.startDate) return true;
+        const start = new Date(p.startDate);
+        const end = p.endDate ? new Date(p.endDate) : start;
+        return start <= dateRange.endDate && end >= dateRange.startDate;
+      })
+    : allProjects;
+
   const propertyFor = (propertyId: string) => properties.find((p) => p.id === propertyId);
   const itemsFor = (projectId: string) => renovationItems.filter((i) => i.projectId === projectId);
 
-  const projectActual = (project: Project) => {
-    const items = itemsFor(project.id);
-    if (items.length > 0) return items.reduce((sum, i) => sum + (i.actualCost ?? 0), 0);
-    return project.actualCost ?? 0;
-  };
+  const projectActual = (project: Project) => calcActualCost(project, itemsFor(project.id));
 
-  const projectBudget = (project: Project) => {
-    if (project.budget != null) return project.budget;
-    return itemsFor(project.id).reduce((sum, i) => sum + i.estimatedCost, 0);
-  };
+  const projectBudget = (project: Project) => calcBudget(project, itemsFor(project.id));
 
   const plannedDuration = (project: Project) =>
     project.startDate && project.endDate
@@ -389,8 +295,17 @@ export function RenovationExpenses({ className = "" }: RenovationExpensesProps) 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className={`space-y-6 ${className}`}>
+        <div className="flex justify-end gap-3">
+          <Skeleton className="h-9 w-32" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatTileSkeleton key={i} />
+          ))}
+        </div>
+        <ListRowSkeletonGroup count={2} statCols={4} />
       </div>
     );
   }
@@ -451,7 +366,9 @@ export function RenovationExpenses({ className = "" }: RenovationExpensesProps) 
       {projects.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center text-muted-foreground">
-            No renovation projects yet — create one to start tracking costs.
+            {allProjects.length === 0
+              ? "No renovation projects yet — create one to start tracking costs."
+              : "No renovation projects in this time period."}
           </CardContent>
         </Card>
       ) : (
@@ -648,7 +565,7 @@ export function RenovationExpenses({ className = "" }: RenovationExpensesProps) 
                 </Card>
               );
             })}
-            {renovationItems.filter((i) => i.projectId).length === 0 && (
+            {projects.every((p) => itemsFor(p.id).length === 0) && (
               <p className="text-muted-foreground text-sm py-8 text-center">
                 No itemized renovation costs recorded yet.
               </p>

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { fetchPropertiesSummary } from "@/services/properties.service";
-import { Building2, DollarSign, TrendingUp, Home, Loader2 } from "lucide-react";
+import { fetchLoans } from "@/services/loans.service";
+import { currentDebtForProperty } from "@/lib/loan-utils";
+import { Building2, DollarSign, TrendingUp, Home } from "lucide-react";
+import { StatTileSkeleton } from "@/components/ui/loading-skeletons";
 
 interface PortfolioStatsData {
   totalProperties: number;
@@ -22,7 +25,10 @@ export function PortfolioStats() {
 
   const fetchStats = async () => {
     try {
-      const properties = await fetchPropertiesSummary();
+      const [properties, loans] = await Promise.all([
+        fetchPropertiesSummary(),
+        fetchLoans(),
+      ]);
       const ownedStatuses = ["owned", "in_rehab", "listed", "rental"];
       const ownedProperties = properties.filter((p) =>
         ownedStatuses.includes(p.status || "")
@@ -33,7 +39,7 @@ export function PortfolioStats() {
         0
       );
       const totalLoans = ownedProperties.reduce(
-        (sum, p) => sum + (p.loan_amount || 0),
+        (sum, p) => sum + currentDebtForProperty(p.id, loans, p.loan_amount || 0),
         0
       );
       const arvValues = properties.filter((p) => p.arv).map((p) => p.arv!);
@@ -67,11 +73,7 @@ export function PortfolioStats() {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-4">
-              <div className="h-16 bg-muted rounded" />
-            </CardContent>
-          </Card>
+          <StatTileSkeleton key={i} />
         ))}
       </div>
     );
@@ -131,7 +133,7 @@ export function PortfolioStats() {
   };
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 animate-in fade-in duration-300">
       {statCards.map((stat) => (
         <Card key={stat.label}>
           <CardContent className="p-4">

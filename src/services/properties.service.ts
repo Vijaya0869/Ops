@@ -127,12 +127,13 @@ export async function fetchProperties(): Promise<Property[]> {
 
 export type PropertySummary = Pick<
   Property,
-  "purchase_price" | "arv" | "loan_amount" | "monthly_rent" | "status"
+  "id" | "purchase_price" | "arv" | "loan_amount" | "monthly_rent" | "status"
 >;
 
 export async function fetchPropertiesSummary(): Promise<PropertySummary[]> {
   const rows = await api.get<ApiProperty[]>("/properties");
   return rows.map((row) => ({
+    id: row.id,
     purchase_price: row.purchasePrice,
     arv: row.arv,
     loan_amount: row.loanAmount,

@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { useProperties } from "./useProperties";
 import { useDeals } from "./useDeals";
+import { useLoans } from "./useLoans";
 import { Property } from "@/types/property";
 import { Deal } from "@/types/deal";
+import { currentDebtForProperty } from "@/lib/loan-utils";
 
 export interface DashboardMetrics {
   // Operations
@@ -60,6 +62,7 @@ export interface DashboardMetrics {
 export function useDashboardData() {
   const { properties, loading: propertiesLoading } = useProperties();
   const { deals, isLoading: dealsLoading } = useDeals();
+  const { loans, loading: loansLoading } = useLoans();
 
   const metrics = useMemo<DashboardMetrics>(() => {
     // Filter properties by status
@@ -79,9 +82,11 @@ export function useDashboardData() {
       return sum + value;
     }, 0);
 
-    // Calculate total loan amounts
+    // Calculate total loan amounts — amortized current balance from real Loan
+    // records where they exist, falling back to the static loan_amount field
+    // for properties that were only ever entered via the simple property form.
     const totalLoanAmount = ownedProperties.reduce((sum, p) => {
-      return sum + (p.loan_amount || 0);
+      return sum + currentDebtForProperty(p.id, loans, p.loan_amount || 0);
     }, 0);
 
     // Calculate equity
@@ -112,7 +117,7 @@ export function useDashboardData() {
     const avgLTV = ownedProperties.length > 0
       ? ownedProperties.reduce((sum, p) => {
           const value = p.arv || p.purchase_price || 0;
-          const loan = p.loan_amount || 0;
+          const loan = currentDebtForProperty(p.id, loans, p.loan_amount || 0);
           return value > 0 ? sum + (loan / value * 100) : sum;
         }, 0) / ownedProperties.length
       : 0;
@@ -224,12 +229,13 @@ export function useDashboardData() {
       activeConstructionProperties: constructionProperties,
       rentalProperties,
     };
-  }, [properties, deals]);
+  }, [properties, deals, loans]);
 
   return {
     metrics,
     properties,
     deals,
-    loading: propertiesLoading || dealsLoading,
+    loans,
+    loading: propertiesLoading || dealsLoading || loansLoading,
   };
 }
