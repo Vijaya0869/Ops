@@ -15,16 +15,21 @@ import {
 } from "lucide-react";
 import { PropertyFormDialog } from "@/components/properties/PropertyFormDialog";
 import { useProperties } from "@/hooks/useProperties";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { PropertyFormData } from "@/types/property";
 
 const PropertiesPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { properties, loading: isLoading, addProperty } = useProperties();
+  const { metrics } = useDashboardData();
 
   const totalProperties = properties.length;
-  const totalValue = properties.reduce((sum, prop) => sum + (prop.arv || 0), 0);
-  const totalPurchasePrice = properties.reduce((sum, prop) => sum + (prop.purchase_price || 0), 0);
-  const totalEquity = totalValue - totalPurchasePrice;
+  // Portfolio value and equity: combined ARV of owned properties, minus their
+  // current loan balance. Sourced from useDashboardData so this matches the
+  // same figures shown on the main Dashboard instead of recomputing them
+  // (and previously diverging) here.
+  const totalValue = metrics.portfolioValue;
+  const totalEquity = metrics.totalEquity;
   const totalCashFlow = properties.reduce((sum, prop) => sum + ((prop.monthly_rent || 0) - (prop.monthly_expenses || 0)), 0);
   const rentalProperties = properties.filter(p => p.status === "rental");
   
@@ -134,8 +139,10 @@ const PropertiesPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-accent">18.5%</div>
-                <p className="text-xs text-success-light mt-1">Above industry avg</p>
+                <div className="text-2xl font-bold text-accent">{metrics.averageROI.toFixed(1)}%</div>
+                <p className="text-xs text-success-light mt-1">
+                  {metrics.averageROI > 0 ? "From sold properties" : "No sales yet"}
+                </p>
               </CardContent>
             </Card>
 
