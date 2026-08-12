@@ -1,20 +1,45 @@
 import { Navigation } from "@/components/Navigation";
 import { ProfitLoss } from "@/components/financials/ProfitLoss";
+import { useIncome } from "@/hooks/useIncome";
+import { useExpenses } from "@/hooks/useExpenses";
+import { useRenovationItems } from "@/hooks/useRenovationItems";
+import { Loader2 } from "lucide-react";
 
 export default function ProfitLossPage() {
-  // Mock financial data - will be replaced with real data connections
-  const financialData = {
-    totalIncome: 125000,
-    totalExpenses: 37500,
-    rentalIncome: 60000,
-    wholesaleProfits: 20000,
-    flipSaleProceeds: 45000
+  const { income, loading: incomeLoading } = useIncome();
+  const { expenses, loading: expensesLoading } = useExpenses();
+  const { renovationItems, loading: renovationLoading } = useRenovationItems();
+
+  const loading = incomeLoading || expensesLoading || renovationLoading;
+
+  const incomeByCategory = (category: string) =>
+    income.filter((i) => i.category === category).reduce((sum, i) => sum + i.amount, 0);
+
+  const expenseByCategory = (category: string) =>
+    expenses.filter((e) => e.category === category).reduce((sum, e) => sum + e.amount, 0);
+
+  const renovationTotal = renovationItems.reduce((sum, r) => sum + (r.actualCost ?? r.estimatedCost), 0);
+
+  const incomeData = {
+    rental: incomeByCategory("rental"),
+    flip: incomeByCategory("flip"),
+    wholesale: incomeByCategory("wholesale"),
+    other: incomeByCategory("other"),
+  };
+
+  const expenseData = {
+    acquisition: expenseByCategory("acquisition"),
+    holding: expenseByCategory("holding"),
+    selling: expenseByCategory("selling"),
+    refinancing: expenseByCategory("refinancing"),
+    renovation: renovationTotal,
+    rentalOps: expenseByCategory("rentalOps"),
   };
 
   return (
     <div className="flex h-screen bg-background">
       <Navigation />
-      
+
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
@@ -22,7 +47,13 @@ export default function ProfitLossPage() {
             <p className="text-muted-foreground">Comprehensive income and expense analysis</p>
           </div>
 
-          <ProfitLoss financialData={financialData} />
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <ProfitLoss income={incomeData} expenses={expenseData} />
+          )}
         </div>
       </main>
     </div>

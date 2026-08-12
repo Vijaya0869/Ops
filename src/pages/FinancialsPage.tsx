@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { CashPosition } from "@/components/financials/CashPosition";
@@ -9,10 +11,17 @@ import { CashFlowForecast } from "@/components/financials/CashFlowForecast";
 import { BalanceSheet } from "@/components/financials/BalanceSheet";
 import { ProfitLoss } from "@/components/financials/ProfitLoss";
 import { NetWorth } from "@/components/financials/NetWorth";
-import { FinancialDrilldown } from "@/components/financials/FinancialDrilldown";
-import { 
-  DollarSign, 
-  TrendingUp, 
+import { FinancialDrilldown, type DrilldownItem } from "@/components/financials/FinancialDrilldown";
+import { Loader2 } from "lucide-react";
+import { usePortfolioReturns } from "@/hooks/usePortfolioReturns";
+import { useIncome } from "@/hooks/useIncome";
+import { useExpenses } from "@/hooks/useExpenses";
+import { useRenovationItems } from "@/hooks/useRenovationItems";
+import { useLenders } from "@/hooks/useLenders";
+import type { Property } from "@/types/property";
+import {
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   PieChart as PieChartIcon,
   BarChart3,
@@ -21,96 +30,181 @@ import {
   CreditCard
 } from "lucide-react";
 
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--accent))",
+];
+
+const INCOME_CATEGORIES = [
+  { id: "rental", name: "Rental Income" },
+  { id: "flip", name: "Flip Income" },
+  { id: "wholesale", name: "Wholesale Income" },
+  { id: "other", name: "Other Income" },
+];
+
+const EXPENSE_CATEGORIES = [
+  { id: "acquisition", name: "Acquisition Costs" },
+  { id: "holding", name: "Holding Costs" },
+  { id: "selling", name: "Selling Costs" },
+  { id: "refinancing", name: "Refinancing Costs" },
+  { id: "rentalOps", name: "Rental Ops Costs" },
+];
+
+function propertyLabel(propertyId: string, properties: Property[]) {
+  return properties.find((p) => p.id === propertyId)?.address || "Unknown property";
+}
+
+function drilldownFromRecords(
+  name: string,
+  records: { propertyId: string; amount: number }[],
+  properties: Property[],
+): DrilldownItem {
+  const byProperty = new Map<string, number>();
+  records.forEach((r) => byProperty.set(r.propertyId, (byProperty.get(r.propertyId) || 0) + r.amount));
+  const children = Array.from(byProperty.entries()).map(([propertyId, amount]) => ({
+    name: propertyLabel(propertyId, properties),
+    amount,
+  }));
+  const amount = children.reduce((sum, c) => sum + c.amount, 0);
+  return { name, amount, children: children.length ? children : undefined };
+}
+
 const FinancialsPage = () => {
-  // Mock financial data - this represents existing dashboard data
-  const overallFinancials = {
-    totalIncome: 145000,
-    totalExpenses: 98000,
-    grossProfit: 47000,
-    netProfit: 42000,
-    cashOnCashReturn: 15.8,
-    roi: 18.5,
-    roe: 22.3
-  };
+  const { metrics, properties, loans, derived, loading: dashboardLoading } = usePortfolioReturns();
+  const { income, loading: incomeLoading } = useIncome();
+  const { expenses, loading: expensesLoading } = useExpenses();
+  const { renovationItems, loading: renovationLoading } = useRenovationItems();
+  const { lenders, loading: lendersLoading } = useLenders();
 
-  // Extract key financial data for cash components
-  const existingFinancialData = {
-    totalIncome: overallFinancials.totalIncome,
-    totalExpenses: overallFinancials.totalExpenses,
-    rentalIncome: 18000, // From income breakdown
-    wholesaleProfits: 45000, // From income breakdown  
-    flipSaleProceeds: 65000, // From income breakdown
-  };
+  const loading = dashboardLoading || incomeLoading || expensesLoading || renovationLoading || lendersLoading;
 
-  // Income data for pie chart
-  const incomeData = [
-    { name: "Sales Revenue", value: 125000, fill: "hsl(var(--chart-1))" },
-    { name: "Refinance Value", value: 15000, fill: "hsl(var(--chart-2))" },
-    { name: "Rental Income", value: existingFinancialData.rentalIncome, fill: "hsl(var(--chart-3))" }
-  ];
+  const incomeByCategory = (categoryId: string) =>
+    income.filter((i) => i.category === categoryId).reduce((sum, i) => sum + i.amount, 0);
+  const expenseByCategory = (categoryId: string) =>
+    expenses.filter((e) => e.category === categoryId).reduce((sum, e) => sum + e.amount, 0);
+  const renovationTotal = renovationItems.reduce((sum, r) => sum + (r.actualCost ?? r.estimatedCost), 0);
 
-  const incomeBreakdown = [
-    { category: "Wholesale Sales", amount: existingFinancialData.wholesaleProfits, percentage: 31 },
-    { category: "Fix & Flip Sales", amount: existingFinancialData.flipSaleProceeds, percentage: 45 },
-    { category: "Wholetail Sales", amount: 15000, percentage: 10 },
-    { category: "Rental Income", amount: existingFinancialData.rentalIncome, percentage: 12 },
-    { category: "Other Income", amount: 2000, percentage: 2 }
-  ];
+  const totalIncome = INCOME_CATEGORIES.reduce((sum, c) => sum + incomeByCategory(c.id), 0);
+  const totalExpenses = EXPENSE_CATEGORIES.reduce((sum, c) => sum + expenseByCategory(c.id), 0) + renovationTotal;
+  const grossProfit = totalIncome - totalExpenses;
+  const profitMargin = totalIncome > 0 ? (grossProfit / totalIncome) * 100 : 0;
 
-  // Renovation expenses breakdown based on template categories
-  const renovationExpenses = [
-    { name: "Prep & Demo", value: 8000, fill: "hsl(var(--chart-1))" },
-    { name: "Structural & Foundation", value: 12000, fill: "hsl(var(--chart-2))" },
-    { name: "Framing & Envelope", value: 15000, fill: "hsl(var(--chart-3))" },
-    { name: "Roofing & Gutters", value: 9000, fill: "hsl(var(--chart-4))" },
-    { name: "Windows & Exterior", value: 14000, fill: "hsl(var(--chart-5))" },
-    { name: "Plumbing", value: 11000, fill: "hsl(var(--primary))" },
-    { name: "Electrical", value: 8500, fill: "hsl(var(--secondary))" },
-    { name: "HVAC", value: 13000, fill: "hsl(var(--accent))" },
-    { name: "Interior Finishes", value: 16000, fill: "hsl(var(--muted))" },
-    { name: "Kitchen", value: 18000, fill: "hsl(var(--success))" },
-    { name: "Bathrooms", value: 12000, fill: "hsl(var(--warning))" },
-    { name: "Exterior Sitework", value: 7500, fill: "hsl(var(--destructive))" }
-  ];
+  const incomeChartData = INCOME_CATEGORIES.map((c, i) => ({
+    name: c.name,
+    value: incomeByCategory(c.id),
+    fill: CHART_COLORS[i % CHART_COLORS.length],
+  })).filter((c) => c.value > 0);
+
+  const incomeBreakdown = INCOME_CATEGORIES.map((c) => {
+    const amount = incomeByCategory(c.id);
+    return { category: c.name, amount, percentage: totalIncome > 0 ? Math.round((amount / totalIncome) * 100) : 0 };
+  });
 
   const expenseBreakdown = [
-    { category: "Acquisition Costs", amount: 25000, percentage: 26 },
-    { category: "Closing Costs", amount: 12000, percentage: 12 },
-    { category: "Holding Costs", amount: 18000, percentage: 18 },
-    { category: "Selling Costs", amount: 15000, percentage: 15 },
-    { category: "Refinancing Costs", amount: 8000, percentage: 8 },
-    { category: "Franchise Fees", amount: 5000, percentage: 5 },
-    { category: "Other Expenses", amount: 15000, percentage: 16 }
+    ...EXPENSE_CATEGORIES.map((c) => {
+      const amount = expenseByCategory(c.id);
+      return { category: c.name, amount, percentage: totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0 };
+    }),
+    {
+      category: "Renovation/Construction",
+      amount: renovationTotal,
+      percentage: totalExpenses > 0 ? Math.round((renovationTotal / totalExpenses) * 100) : 0,
+    },
   ];
 
-  const lendingData = [
-    {
-      type: "Hard Money",
-      totalDebt: 185000,
-      interestRate: 12.5,
-      dailyInterest: 63.36,
-      payoffDeadline: "2024-06-15"
-    },
-    {
-      type: "Private Money", 
-      totalDebt: 95000,
-      interestRate: 8.0,
-      dailyInterest: 20.82,
-      payoffDeadline: "2024-08-30"
-    },
-    {
-      type: "DSCR Loan",
-      totalDebt: 220000,
-      interestRate: 7.25,
-      dailyInterest: 43.84,
-      payoffDeadline: "2029-03-15"
-    }
-  ];
+  // Renovation items are grouped by their own real category (the specific
+  // line item, e.g. "Cabinets", "Roof - Tear Off & Shingles") rather than
+  // forced into a fixed preset taxonomy some items were never assigned to.
+  const renovationByCategory = useMemo(() => {
+    const totals = new Map<string, number>();
+    renovationItems.forEach((r) => {
+      const cost = r.actualCost ?? r.estimatedCost;
+      totals.set(r.category, (totals.get(r.category) || 0) + cost);
+    });
+    return Array.from(totals.entries()).map(([name, value], i) => ({
+      name,
+      value,
+      fill: CHART_COLORS[i % CHART_COLORS.length],
+    }));
+  }, [renovationItems]);
+
+  const rentalProperties = properties.filter((p) => p.status === "rental");
+  const rentalMonthlyIncome = rentalProperties.reduce((sum, p) => sum + (p.monthly_rent || 0), 0);
+  const rentalMonthlyExpenses = rentalProperties.reduce((sum, p) => sum + (p.monthly_expenses || 0), 0);
+  const rentalNOI = rentalMonthlyIncome - rentalMonthlyExpenses;
+  const rentalMargin = rentalMonthlyIncome > 0 ? (rentalNOI / rentalMonthlyIncome) * 100 : 0;
+
+  const activeLoans = loans.filter((l) => l.status === "active");
+  const loanDailyInterest = (principal: number, rate: number) => (principal * (rate / 100)) / 365;
+  const loanMaturity = (startDate: string, termMonths: number | null) => {
+    if (!termMonths) return null;
+    const date = new Date(startDate);
+    date.setMonth(date.getMonth() + termMonths);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  // Balance Sheet and Net Worth still need a real cash/bank-balance data
+  // source that doesn't exist anywhere in the schema yet — left on
+  // placeholder figures until that's designed, same as the dedicated
+  // /financials/balance-sheet and /financials/net-worth pages.
+  const placeholderFinancials = {
+    totalIncome: 125000,
+    totalExpenses: 37500,
+    rentalIncome: 60000,
+    wholesaleProfits: 20000,
+    flipSaleProceeds: 45000,
+  };
+
+  const incomeDrilldown: DrilldownItem = {
+    name: "Total Income",
+    amount: totalIncome,
+    children: INCOME_CATEGORIES.map((c) =>
+      drilldownFromRecords(
+        c.name,
+        income.filter((i) => i.category === c.id),
+        properties,
+      ),
+    ).filter((c) => c.amount > 0),
+  };
+
+  const expenseDrilldown: DrilldownItem = {
+    name: "Total Expenses",
+    amount: totalExpenses,
+    children: [
+      ...EXPENSE_CATEGORIES.map((c) =>
+        drilldownFromRecords(
+          c.name,
+          expenses.filter((e) => e.category === c.id),
+          properties,
+        ),
+      ),
+      drilldownFromRecords(
+        "Renovation/Construction",
+        renovationItems.map((r) => ({ propertyId: r.propertyId, amount: r.actualCost ?? r.estimatedCost })),
+        properties,
+      ),
+    ].filter((c) => c.amount > 0),
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen">
+        <Navigation />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
       <Navigation />
-      
+
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="mb-8">
@@ -138,7 +232,7 @@ const FinancialsPage = () => {
             </TabsList>
 
             <TabsContent value="drilldown" className="space-y-6">
-              <FinancialDrilldown />
+              <FinancialDrilldown income={incomeDrilldown} expenses={expenseDrilldown} />
             </TabsContent>
 
             <TabsContent value="overview" className="space-y-6">
@@ -153,9 +247,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-success-light">
-                      ${overallFinancials.totalIncome.toLocaleString()}
+                      ${metrics.totalIncome.toLocaleString()}
                     </div>
-                    <p className="text-xs text-success-light mt-1">+12.5% from last period</p>
+                    <p className="text-xs text-muted-foreground mt-1">Rental income + realized sale profit</p>
                   </CardContent>
                 </Card>
 
@@ -168,9 +262,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-destructive">
-                      ${overallFinancials.totalExpenses.toLocaleString()}
+                      ${metrics.totalExpenses.toLocaleString()}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">+5.2% from last period</p>
+                    <p className="text-xs text-muted-foreground mt-1">Annualized rental expenses</p>
                   </CardContent>
                 </Card>
 
@@ -183,9 +277,11 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-accent">
-                      ${overallFinancials.grossProfit.toLocaleString()}
+                      ${metrics.grossProfit.toLocaleString()}
                     </div>
-                    <p className="text-xs text-success-light mt-1">+15.8% from last period</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {metrics.grossProfit >= 0 ? "Positive" : "Negative"}
+                    </p>
                   </CardContent>
                 </Card>
 
@@ -198,9 +294,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-accent">
-                      ${overallFinancials.netProfit.toLocaleString()}
+                      ${metrics.netProfit.toLocaleString()}
                     </div>
-                    <p className="text-xs text-success-light mt-1">+18.2% from last period</p>
+                    <p className="text-xs text-muted-foreground mt-1">After estimated taxes/other (30%)</p>
                   </CardContent>
                 </Card>
 
@@ -213,9 +309,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-accent">
-                      {overallFinancials.cashOnCashReturn}%
+                      {derived.cashOnCash.toFixed(1)}%
                     </div>
-                    <p className="text-xs text-success-light mt-1">Above 12% target</p>
+                    <p className="text-xs text-muted-foreground mt-1">Annual cash flow / cash basis</p>
                   </CardContent>
                 </Card>
               </div>
@@ -228,9 +324,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-accent mb-2">
-                      {overallFinancials.roi}%
+                      {metrics.averageROI.toFixed(1)}%
                     </div>
-                    <Progress value={overallFinancials.roi} className="h-2" />
+                    <Progress value={Math.min(100, Math.max(0, metrics.averageROI))} className="h-2" />
                   </CardContent>
                 </Card>
 
@@ -240,9 +336,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-success-light mb-2">
-                      {overallFinancials.roe}%
+                      {derived.roe.toFixed(1)}%
                     </div>
-                    <Progress value={overallFinancials.roe} className="h-2" />
+                    <Progress value={Math.min(100, Math.max(0, derived.roe))} className="h-2" />
                   </CardContent>
                 </Card>
 
@@ -252,9 +348,9 @@ const FinancialsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-accent mb-2">
-                      {((overallFinancials.netProfit / overallFinancials.totalIncome) * 100).toFixed(1)}%
+                      {metrics.netProfitMargin.toFixed(1)}%
                     </div>
-                    <Progress value={(overallFinancials.netProfit / overallFinancials.totalIncome) * 100} className="h-2" />
+                    <Progress value={Math.min(100, Math.max(0, metrics.netProfitMargin))} className="h-2" />
                   </CardContent>
                 </Card>
               </div>
@@ -271,32 +367,31 @@ const FinancialsPage = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ChartContainer
-                      config={{
-                        sales: { label: "Sales Revenue", color: "hsl(var(--chart-1))" },
-                        refinance: { label: "Refinance Value", color: "hsl(var(--chart-2))" },
-                        rental: { label: "Rental Income", color: "hsl(var(--chart-3))" }
-                      }}
-                      className="h-[300px]"
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={incomeData}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            dataKey="value"
-                            label={({ name, value }) => `${name}: $${value.toLocaleString()}`}
-                          >
-                            {incomeData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
+                    {incomeChartData.length === 0 ? (
+                      <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
+                        No income recorded yet
+                      </div>
+                    ) : (
+                      <ChartContainer config={{}} className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={incomeChartData}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              dataKey="value"
+                              label={({ name, value }) => `${name}: $${value.toLocaleString()}`}
+                            >
+                              {incomeChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <ChartTooltip content={<ChartTooltipContent />} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -353,57 +448,44 @@ const FinancialsPage = () => {
                         </div>
                       ))}
                     </div>
-                    <ChartContainer
-                      config={{}}
-                      className="h-[350px]"
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={expenseBreakdown.map((item, index) => {
-                              const colors = [
-                                "hsl(0, 70%, 50%)",    // Red
-                                "hsl(30, 70%, 50%)",   // Orange
-                                "hsl(60, 70%, 50%)",   // Yellow
-                                "hsl(120, 70%, 50%)",  // Green
-                                "hsl(180, 70%, 50%)",  // Cyan
-                                "hsl(240, 70%, 50%)",  // Blue
-                                "hsl(300, 70%, 50%)"   // Magenta
-                              ];
-                              return {
-                                name: item.category,
-                                value: item.amount,
-                                fill: colors[index % colors.length]
-                              };
-                            })}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            innerRadius={40}
-                            dataKey="value"
-                            stroke="white"
-                            strokeWidth={2}
-                          >
-                            {expenseBreakdown.map((entry, index) => {
-                              const colors = [
-                                "hsl(0, 70%, 50%)",
-                                "hsl(30, 70%, 50%)",
-                                "hsl(60, 70%, 50%)",
-                                "hsl(120, 70%, 50%)",
-                                "hsl(180, 70%, 50%)",
-                                "hsl(240, 70%, 50%)",
-                                "hsl(300, 70%, 50%)"
-                              ];
-                              return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                            })}
-                          </Pie>
-                          <ChartTooltip 
-                            content={<ChartTooltipContent />}
-                            formatter={(value, name) => [`$${value.toLocaleString()}`, name]}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
+                    {expenseBreakdown.every((e) => e.amount === 0) ? (
+                      <div className="h-[350px] flex items-center justify-center text-sm text-muted-foreground">
+                        No expenses recorded yet
+                      </div>
+                    ) : (
+                      <ChartContainer config={{}} className="h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={expenseBreakdown
+                                .filter((item) => item.amount > 0)
+                                .map((item, index) => ({
+                                  name: item.category,
+                                  value: item.amount,
+                                  fill: CHART_COLORS[index % CHART_COLORS.length],
+                                }))}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              innerRadius={40}
+                              dataKey="value"
+                              stroke="white"
+                              strokeWidth={2}
+                            >
+                              {expenseBreakdown
+                                .filter((item) => item.amount > 0)
+                                .map((_, index) => (
+                                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <ChartTooltip
+                              content={<ChartTooltipContent />}
+                              formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name]}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -417,34 +499,37 @@ const FinancialsPage = () => {
                   </CardTitle>
                 </CardHeader>
                   <CardContent>
-                    <ChartContainer
-                      config={{}}
-                      className="h-[400px]"
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={renovationExpenses}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={120}
-                            innerRadius={0}
-                            dataKey="value"
-                            stroke="none"
-                            label={({ name, value }) => `${name}: $${value.toLocaleString()}`}
-                            labelLine={false}
-                          >
-                            {renovationExpenses.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                          <ChartTooltip 
-                            content={<ChartTooltipContent />}
-                            formatter={(value, name) => [`$${value.toLocaleString()}`, name]}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
+                    {renovationByCategory.length === 0 ? (
+                      <div className="h-[400px] flex items-center justify-center text-sm text-muted-foreground">
+                        No renovation items recorded yet
+                      </div>
+                    ) : (
+                      <ChartContainer config={{}} className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={renovationByCategory}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={120}
+                              innerRadius={0}
+                              dataKey="value"
+                              stroke="none"
+                              label={({ name, value }) => `${name}: $${value.toLocaleString()}`}
+                              labelLine={false}
+                            >
+                              {renovationByCategory.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <ChartTooltip
+                              content={<ChartTooltipContent />}
+                              formatter={(value, name) => [`$${Number(value).toLocaleString()}`, name]}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                    )}
                   </CardContent>
               </Card>
             </TabsContent>
@@ -458,8 +543,8 @@ const FinancialsPage = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-success">$5,250</div>
-                    <p className="text-xs text-success mt-1">From 3 properties</p>
+                    <div className="text-2xl font-bold text-success">${rentalMonthlyIncome.toLocaleString()}</div>
+                    <p className="text-xs text-success mt-1">From {rentalProperties.length} propert{rentalProperties.length === 1 ? "y" : "ies"}</p>
                   </CardContent>
                 </Card>
 
@@ -470,7 +555,7 @@ const FinancialsPage = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-destructive">$1,825</div>
+                    <div className="text-2xl font-bold text-destructive">${rentalMonthlyExpenses.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground mt-1">Repairs, management, etc.</p>
                   </CardContent>
                 </Card>
@@ -482,8 +567,10 @@ const FinancialsPage = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-primary">$3,425</div>
-                    <p className="text-xs text-success mt-1">65% profit margin</p>
+                    <div className="text-2xl font-bold text-primary">${rentalNOI.toLocaleString()}</div>
+                    <p className="text-xs text-success mt-1">
+                      {rentalMonthlyIncome > 0 ? `${rentalMargin.toFixed(0)}% profit margin` : "No rental income yet"}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -498,55 +585,93 @@ const FinancialsPage = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {lendingData.map((loan, index) => (
-                      <div key={index} className="p-4 border rounded-lg bg-card">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-semibold">{loan.type}</h3>
-                          <div className="text-right">
-                            <div className="font-bold">${loan.totalDebt.toLocaleString()}</div>
-                            <div className="text-sm text-muted-foreground">Total Debt</div>
+                  {loans.length === 0 ? (
+                    <p className="text-muted-foreground text-sm py-8 text-center">No loans recorded yet.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {loans.map((loan) => {
+                        const lender = lenders.find((l) => l.id === loan.lenderId);
+                        const maturity = loanMaturity(loan.startDate, loan.termMonths);
+                        return (
+                          <div key={loan.id} className="p-4 border rounded-lg bg-card">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h3 className="font-semibold">{propertyLabel(loan.propertyId, properties)}</h3>
+                                <p className="text-sm text-muted-foreground">{lender?.name || "Lender not set"}</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <Badge variant={loan.status === "active" ? "default" : "outline"}>
+                                  {loan.status.replace("_", " ").toUpperCase()}
+                                </Badge>
+                                <div className="text-right">
+                                  <div className="font-bold">${loan.principal.toLocaleString()}</div>
+                                  <div className="text-sm text-muted-foreground">Principal</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <div className="text-muted-foreground">Interest Rate</div>
+                                <div className="font-semibold">{loan.interestRate}%</div>
+                              </div>
+                              <div>
+                                <div className="text-muted-foreground">Daily Interest</div>
+                                <div className="font-semibold text-destructive">
+                                  ${loanDailyInterest(loan.principal, loan.interestRate).toFixed(2)}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-muted-foreground">Maturity Date</div>
+                                <div className="font-semibold">{maturity || "—"}</div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <div className="text-muted-foreground">Interest Rate</div>
-                            <div className="font-semibold">{loan.interestRate}%</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Daily Interest</div>
-                            <div className="font-semibold text-destructive">${loan.dailyInterest}</div>
-                          </div>
-                          <div>
-                            <div className="text-muted-foreground">Payoff Deadline</div>
-                            <div className="font-semibold">{loan.payoffDeadline}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {activeLoans.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-4">
+                      See the Lending page for LTV and monthly-payment detail per loan.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="cash-position" className="space-y-6">
-              <CashPosition existingFinancials={existingFinancialData} />
+              <CashPosition />
             </TabsContent>
 
             <TabsContent value="cash-forecast" className="space-y-6">
-              <CashFlowForecast existingFinancials={existingFinancialData} />
+              <CashFlowForecast />
             </TabsContent>
 
             <TabsContent value="balance-sheet" className="space-y-6">
-              <BalanceSheet financialData={existingFinancialData} />
+              <BalanceSheet financialData={placeholderFinancials} />
             </TabsContent>
 
             <TabsContent value="profit-loss" className="space-y-6">
-              <ProfitLoss financialData={existingFinancialData} />
+              <ProfitLoss
+                income={{
+                  rental: incomeByCategory("rental"),
+                  flip: incomeByCategory("flip"),
+                  wholesale: incomeByCategory("wholesale"),
+                  other: incomeByCategory("other"),
+                }}
+                expenses={{
+                  acquisition: expenseByCategory("acquisition"),
+                  holding: expenseByCategory("holding"),
+                  selling: expenseByCategory("selling"),
+                  refinancing: expenseByCategory("refinancing"),
+                  renovation: renovationTotal,
+                  rentalOps: expenseByCategory("rentalOps"),
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="net-worth" className="space-y-6">
-              <NetWorth financialData={existingFinancialData} />
+              <NetWorth financialData={placeholderFinancials} />
             </TabsContent>
           </Tabs>
         </div>

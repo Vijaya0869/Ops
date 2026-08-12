@@ -3,71 +3,63 @@ import { Button } from "@/components/ui/button";
 import { Download, TrendingUp, TrendingDown } from "lucide-react";
 
 interface ProfitLossProps {
-  financialData: {
-    totalIncome: number;
-    totalExpenses: number;
-    rentalIncome: number;
-    wholesaleProfits: number;
-    flipSaleProceeds: number;
+  income: {
+    rental: number;
+    flip: number;
+    wholesale: number;
+    other: number;
+  };
+  expenses: {
+    acquisition: number;
+    holding: number;
+    selling: number;
+    refinancing: number;
+    renovation: number;
+    rentalOps: number;
   };
 }
 
-export function ProfitLoss({ financialData }: ProfitLossProps) {
-  // Income breakdown based on dashboard data
-  const income = {
-    wholesaleSales: financialData.wholesaleProfits,
-    fixFlipSales: financialData.flipSaleProceeds,
-    wholetailSales: 15000,
-    rentalIncome: financialData.rentalIncome,
-    refinanceValue: 15000,
-    otherIncome: 2000,
-  };
+const INCOME_LABELS: Record<keyof ProfitLossProps["income"], string> = {
+  rental: "Rental Income",
+  flip: "Flip Income",
+  wholesale: "Wholesale Income",
+  other: "Other Income",
+};
 
-  // Expense breakdown
-  const expenses = {
-    acquisitionCosts: 25000,
-    closingCosts: 12000,
-    holdingCosts: 18000,
-    sellingCosts: 15000,
-    refinancingCosts: 8000,
-    franchiseFees: 5000,
-    generalAdminExpenses: 12000,
-    marketingExpenses: 3000,
-  };
+const EXPENSE_LABELS: Record<keyof ProfitLossProps["expenses"], string> = {
+  acquisition: "Acquisition Costs",
+  holding: "Holding Costs",
+  selling: "Selling Costs",
+  refinancing: "Refinancing Costs",
+  renovation: "Renovation/Construction",
+  rentalOps: "Rental Ops Costs",
+};
 
+export function ProfitLoss({ income, expenses }: ProfitLossProps) {
   const totalIncome = Object.values(income).reduce((sum, val) => sum + val, 0);
   const totalExpenses = Object.values(expenses).reduce((sum, val) => sum + val, 0);
-  const grossProfit = totalIncome - totalExpenses;
-  const netIncome = grossProfit; // Assuming no additional taxes for simplicity
+  const netIncome = totalIncome - totalExpenses;
+  const profitMargin = totalIncome > 0 ? (netIncome / totalIncome) * 100 : 0;
 
   const downloadProfitLoss = () => {
-    const data = `R&R Grandeur Properties LLC - Profit & Loss Statement
+    const data = `Profit & Loss Statement
 For the Period Ending ${new Date().toLocaleDateString()}
 
 INCOME:
-- Wholesale Sales: $${income.wholesaleSales.toLocaleString()}
-- Fix & Flip Sales: $${income.fixFlipSales.toLocaleString()}
-- Wholetail Sales: $${income.wholetailSales.toLocaleString()}
-- Rental Income: $${income.rentalIncome.toLocaleString()}
-- Refinance Value: $${income.refinanceValue.toLocaleString()}
-- Other Income: $${income.otherIncome.toLocaleString()}
+${(Object.keys(income) as (keyof typeof income)[])
+  .map((key) => `- ${INCOME_LABELS[key]}: $${income[key].toLocaleString()}`)
+  .join("\n")}
 Total Income: $${totalIncome.toLocaleString()}
 
 EXPENSES:
-- Acquisition Costs: $${expenses.acquisitionCosts.toLocaleString()}
-- Closing Costs: $${expenses.closingCosts.toLocaleString()}
-- Holding Costs: $${expenses.holdingCosts.toLocaleString()}
-- Selling Costs: $${expenses.sellingCosts.toLocaleString()}
-- Refinancing Costs: $${expenses.refinancingCosts.toLocaleString()}
-- Franchise Fees: $${expenses.franchiseFees.toLocaleString()}
-- General & Admin Expenses: $${expenses.generalAdminExpenses.toLocaleString()}
-- Marketing Expenses: $${expenses.marketingExpenses.toLocaleString()}
+${(Object.keys(expenses) as (keyof typeof expenses)[])
+  .map((key) => `- ${EXPENSE_LABELS[key]}: $${expenses[key].toLocaleString()}`)
+  .join("\n")}
 Total Expenses: $${totalExpenses.toLocaleString()}
 
-Gross Profit: $${grossProfit.toLocaleString()}
 Net Income: $${netIncome.toLocaleString()}
 
-Profit Margin: ${((netIncome / totalIncome) * 100).toFixed(1)}%`;
+Profit Margin: ${profitMargin.toFixed(1)}%`;
 
     const blob = new Blob([data], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -102,30 +94,12 @@ Profit Margin: ${((netIncome / totalIncome) * 100).toFixed(1)}%`;
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Wholesale Sales</span>
-                <span className="font-medium text-accent">${income.wholesaleSales.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Fix & Flip Sales</span>
-                <span className="font-medium text-accent">${income.fixFlipSales.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Wholetail Sales</span>
-                <span className="font-medium text-accent">${income.wholetailSales.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Rental Income</span>
-                <span className="font-medium text-accent">${income.rentalIncome.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Refinance Value</span>
-                <span className="font-medium text-accent">${income.refinanceValue.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Other Income</span>
-                <span className="font-medium text-accent">${income.otherIncome.toLocaleString()}</span>
-              </div>
+              {(Object.keys(income) as (keyof typeof income)[]).map((key) => (
+                <div key={key} className="flex justify-between py-2">
+                  <span className="text-muted-foreground">{INCOME_LABELS[key]}</span>
+                  <span className="font-medium text-accent">${income[key].toLocaleString()}</span>
+                </div>
+              ))}
               <div className="flex justify-between border-t border-border pt-3 text-lg font-bold">
                 <span className="text-foreground">Total Income</span>
                 <span className="text-accent">${totalIncome.toLocaleString()}</span>
@@ -144,38 +118,12 @@ Profit Margin: ${((netIncome / totalIncome) * 100).toFixed(1)}%`;
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Acquisition Costs</span>
-                <span className="font-medium text-destructive">${expenses.acquisitionCosts.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Closing Costs</span>
-                <span className="font-medium text-destructive">${expenses.closingCosts.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Holding Costs</span>
-                <span className="font-medium text-destructive">${expenses.holdingCosts.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Selling Costs</span>
-                <span className="font-medium text-destructive">${expenses.sellingCosts.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Refinancing Costs</span>
-                <span className="font-medium text-destructive">${expenses.refinancingCosts.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Franchise Fees</span>
-                <span className="font-medium text-destructive">${expenses.franchiseFees.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">General & Admin</span>
-                <span className="font-medium text-destructive">${expenses.generalAdminExpenses.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Marketing Expenses</span>
-                <span className="font-medium text-destructive">${expenses.marketingExpenses.toLocaleString()}</span>
-              </div>
+              {(Object.keys(expenses) as (keyof typeof expenses)[]).map((key) => (
+                <div key={key} className="flex justify-between py-2">
+                  <span className="text-muted-foreground">{EXPENSE_LABELS[key]}</span>
+                  <span className="font-medium text-destructive">${expenses[key].toLocaleString()}</span>
+                </div>
+              ))}
               <div className="flex justify-between border-t border-border pt-3 text-lg font-bold">
                 <span className="text-foreground">Total Expenses</span>
                 <span className="text-destructive">${totalExpenses.toLocaleString()}</span>
@@ -207,7 +155,7 @@ Profit Margin: ${((netIncome / totalIncome) * 100).toFixed(1)}%`;
           </div>
           <div className="mt-4 text-center">
             <div className="text-lg font-semibold text-foreground">
-              Profit Margin: <span className="text-accent">{((netIncome / totalIncome) * 100).toFixed(1)}%</span>
+              Profit Margin: <span className="text-accent">{profitMargin.toFixed(1)}%</span>
             </div>
           </div>
         </CardContent>

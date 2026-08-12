@@ -10,6 +10,35 @@ function monthsElapsed(startDate: string, asOf: Date): number {
 }
 
 /**
+ * A loan's monthly payment: its recorded value if set, otherwise derived
+ * from principal/rate/term via standard mortgage math. Null if there isn't
+ * enough info (no payment and no term) to derive one.
+ */
+export function monthlyPaymentFor(loan: Loan): number | null {
+  if (loan.monthlyPayment && loan.monthlyPayment > 0) return loan.monthlyPayment;
+
+  const principal = loan.principal || 0;
+  if (principal <= 0 || !loan.termMonths || loan.termMonths <= 0) return null;
+
+  const monthlyRate = (loan.interestRate || 0) / 100 / 12;
+  return monthlyRate > 0
+    ? (principal * monthlyRate * Math.pow(1 + monthlyRate, loan.termMonths)) /
+        (Math.pow(1 + monthlyRate, loan.termMonths) - 1)
+    : principal / loan.termMonths;
+}
+
+/**
+ * Total annual debt service (loan payments) across a set of active loans.
+ * Loans that are paid off/refinanced, or that have no derivable payment,
+ * are excluded rather than guessed at.
+ */
+export function annualDebtService(loans: Loan[]): number {
+  return loans
+    .filter((l) => l.status === "active")
+    .reduce((sum, l) => sum + (monthlyPaymentFor(l) || 0), 0) * 12;
+}
+
+/**
  * Current remaining balance of a single loan, amortized forward from
  * startDate using standard mortgage math. Falls back to the original
  * principal if there isn't enough info (payment + term) to amortize.
@@ -24,18 +53,10 @@ export function calculateRemainingBalance(loan: Loan, asOf: Date = new Date()): 
   let n = monthsElapsed(loan.startDate, asOf);
   if (loan.termMonths) n = Math.min(n, loan.termMonths);
 
-  let payment = loan.monthlyPayment;
+  const payment = monthlyPaymentFor(loan);
   if (!payment || payment <= 0) {
-    if (loan.termMonths && loan.termMonths > 0) {
-      payment =
-        monthlyRate > 0
-          ? (principal * monthlyRate * Math.pow(1 + monthlyRate, loan.termMonths)) /
-            (Math.pow(1 + monthlyRate, loan.termMonths) - 1)
-          : principal / loan.termMonths;
-    } else {
-      // No payment and no term to derive one from — nothing to amortize with.
-      return principal;
-    }
+    // No payment and no term to derive one from — nothing to amortize with.
+    return principal;
   }
 
   const balance =

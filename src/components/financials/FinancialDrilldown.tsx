@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 
-interface DrilldownItem {
+export interface DrilldownItem {
   name: string;
   amount: number;
   percentage?: number;
@@ -11,10 +11,12 @@ interface DrilldownItem {
 }
 
 interface FinancialDrilldownProps {
+  income: DrilldownItem;
+  expenses: DrilldownItem;
   className?: string;
 }
 
-export function FinancialDrilldown({ className }: FinancialDrilldownProps) {
+export function FinancialDrilldown({ income: incomeData, expenses: expenseData, className }: FinancialDrilldownProps) {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(["income", "expenses"]));
 
   const toggleSection = (sectionId: string) => {
@@ -25,146 +27,6 @@ export function FinancialDrilldown({ className }: FinancialDrilldownProps) {
       newOpenSections.add(sectionId);
     }
     setOpenSections(newOpenSections);
-  };
-
-  // Mock data - replace with real data
-  const incomeData: DrilldownItem = {
-    name: "Total Income",
-    amount: 125000,
-    children: [
-      {
-        name: "Sales Income",
-        amount: 65000,
-        children: [
-          { name: "Property Sale Proceeds", amount: 45000 },
-          { name: "Assignment Fees (Wholesales)", amount: 20000 }
-        ]
-      },
-      {
-        name: "Flip Income",
-        amount: 25000,
-        children: [
-          { name: "Flip Proceeds", amount: 25000 }
-        ]
-      },
-      {
-        name: "Wholesale Income",
-        amount: 15000,
-        children: [
-          { name: "Wholesale Fees", amount: 15000 }
-        ]
-      },
-      {
-        name: "Rental Income",
-        amount: 18000,
-        children: [
-          { name: "Monthly Rent Collected", amount: 15000 },
-          { name: "Late Fees / Misc Rent Income", amount: 1500 },
-          { name: "Tenant Fees", amount: 1000 },
-          { name: "Property Management Income", amount: 500 }
-        ]
-      },
-      {
-        name: "Other Income",
-        amount: 2000,
-        children: [
-          { name: "Consulting", amount: 1200 },
-          { name: "JV Splits", amount: 500 },
-          { name: "Miscellaneous", amount: 300 }
-        ]
-      }
-    ]
-  };
-
-  const expenseData: DrilldownItem = {
-    name: "Total Expenses",
-    amount: 87500,
-    children: [
-      {
-        name: "Acquisition Costs",
-        amount: 15000,
-        children: [
-          { name: "Lender Fees", amount: 5000 },
-          { name: "Wholesale Fees", amount: 3000 },
-          { name: "Closing Costs", amount: 4500 },
-          { name: "Title Costs", amount: 2500 }
-        ]
-      },
-      {
-        name: "Holding Costs",
-        amount: 12000,
-        children: [
-          { name: "Debt Service", amount: 6000 },
-          { name: "Insurance", amount: 2000 },
-          { name: "Property Taxes", amount: 2500 },
-          { name: "Utilities", amount: 1200 },
-          { name: "Miscellaneous", amount: 300 }
-        ]
-      },
-      {
-        name: "Rehab / Construction Costs",
-        amount: 25000,
-        children: [
-          { name: "Materials", amount: 15000 },
-          { name: "Labor / Subcontractor Payments", amount: 8000 },
-          { name: "Permits & Inspections", amount: 1500 },
-          { name: "Contingency", amount: 500 }
-        ]
-      },
-      {
-        name: "Selling Costs",
-        amount: 8000,
-        children: [
-          { name: "Staging Costs", amount: 2000 },
-          { name: "Agent Commissions", amount: 4000 },
-          { name: "Buyer Incentives", amount: 1500 },
-          { name: "Marketing & Advertising", amount: 500 }
-        ]
-      },
-      {
-        name: "Refinancing Costs",
-        amount: 4000,
-        children: [
-          { name: "Appraisal Fees", amount: 500 },
-          { name: "Lender Points & Origination", amount: 2000 },
-          { name: "Lender Fees", amount: 800 },
-          { name: "Closing Costs", amount: 500 },
-          { name: "Title Costs", amount: 200 }
-        ]
-      },
-      {
-        name: "Franchise Costs",
-        amount: 3000,
-        children: [
-          { name: "Franchise Fees / Royalties", amount: 2000 },
-          { name: "Marketing Fund Contributions", amount: 700 },
-          { name: "Technology / Back-Office Fees", amount: 300 }
-        ]
-      },
-      {
-        name: "Rental-Related Costs",
-        amount: 9500,
-        children: [
-          { name: "Property Management Fees", amount: 2000 },
-          { name: "Maintenance & Repairs", amount: 3000 },
-          { name: "Tenant Turnover", amount: 1500 },
-          { name: "Vacancy Costs", amount: 1200 },
-          { name: "Leasing Costs", amount: 1000 },
-          { name: "HOA Fees", amount: 500 },
-          { name: "Misc Rental Expenses", amount: 300 }
-        ]
-      },
-      {
-        name: "Operations / Admin",
-        amount: 11000,
-        children: [
-          { name: "Payroll / Contractors", amount: 6000 },
-          { name: "Office / Software / Tools", amount: 2500 },
-          { name: "Travel & Vehicle", amount: 1500 },
-          { name: "Miscellaneous G&A", amount: 1000 }
-        ]
-      }
-    ]
   };
 
   const renderDrilldownItem = (item: DrilldownItem, level: number = 0, parentKey: string = "") => {
