@@ -1,6 +1,8 @@
-// Supabase's edge function sent email via Resend. The self-hosted backend has
-// no email provider configured yet, so this is a no-op stub rather than a
-// hard failure — deal-stage-change emails just don't send until one's wired up.
+import { api } from "./api-client";
+
+// The backend derives the recipient from the authenticated session rather
+// than trusting recipientEmail/recipientName from here — sending those is
+// harmless (the ValidationPipe strips unknown fields) but they're ignored.
 export async function invokeSendNotification(body: Record<string, unknown>): Promise<void> {
-  console.log("Notification skipped (no email provider configured):", body);
+  await api.post("/notifications/send", body);
 }

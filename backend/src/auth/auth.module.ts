@@ -5,6 +5,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+
+// Google sign-in is optional until GOOGLE_CLIENT_ID/SECRET are configured —
+// skip registering the strategy rather than crash the whole app on boot.
+const googleProviders = process.env.GOOGLE_CLIENT_ID ? [GoogleStrategy] : [];
 
 @Module({
   imports: [
@@ -24,7 +29,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, ...googleProviders],
   exports: [JwtModule],
 })
 export class AuthModule {}

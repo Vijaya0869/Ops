@@ -8,8 +8,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import * as profilesService from "@/services/profiles.service";
 import type { Profile } from "@/services/profiles.service";
+import * as authService from "@/services/auth.service";
+import { ApiError } from "@/services/api-client";
 import { toast } from "sonner";
-import { Loader2, User, Mail, Building2, Calendar, Camera, Upload } from "lucide-react";
+import { Loader2, User, Mail, Building2, Calendar, Camera, Upload, Lock } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -20,6 +23,11 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -99,6 +107,35 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
+  const handleChangePassword = async () => {
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      toast.success("Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      const message =
+        error instanceof ApiError && error.status === 401
+          ? "Current password is incorrect"
+          : error instanceof Error
+            ? error.message
+            : "Failed to change password";
+      toast.error(message);
+    }
+    setChangingPassword(false);
+  };
+
   const getInitials = () => {
     if (fullName) {
       return fullName
@@ -132,8 +169,31 @@ export default function ProfilePage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <div className="space-y-6">
+              <Card variant="glass">
+                <CardHeader>
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-3 w-48" />
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                  <Skeleton className="h-20 w-20 rounded-full" />
+                  <Skeleton className="h-9 w-32" />
+                </CardContent>
+              </Card>
+              <Card variant="glass">
+                <CardHeader>
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-3 w-56" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="space-y-2">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-9 w-full" />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
           ) : (
             <>
@@ -281,6 +341,72 @@ export default function ProfilePage() {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Change Password */}
+              {user?.hasPassword && (
+                <Card variant="glass">
+                  <CardHeader>
+                    <CardTitle className="text-foreground">Change Password</CardTitle>
+                    <CardDescription className="text-muted-foreground">Update your account password</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword" className="flex items-center gap-2 text-foreground">
+                        <Lock className="h-4 w-4 text-accent" />
+                        Current Password
+                      </Label>
+                      <Input
+                        id="currentPassword"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="bg-panel border-border text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword" className="flex items-center gap-2 text-foreground">
+                        <Lock className="h-4 w-4 text-accent" />
+                        New Password
+                      </Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="bg-panel border-border text-foreground"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="flex items-center gap-2 text-foreground">
+                        <Lock className="h-4 w-4 text-accent" />
+                        Confirm New Password
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="bg-panel border-border text-foreground"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleChangePassword}
+                      disabled={changingPassword || !currentPassword || !newPassword}
+                      variant="gold"
+                      className="w-full"
+                    >
+                      {changingPassword ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Changing...
+                        </>
+                      ) : (
+                        "Change Password"
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </div>

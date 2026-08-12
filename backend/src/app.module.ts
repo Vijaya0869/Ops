@@ -18,6 +18,7 @@ import { DealCostsModule } from './deal-costs/deal-costs.module';
 import { DealAnalysesModule } from './deal-analyses/deal-analyses.module';
 import { PropertyPhotosModule } from './property-photos/property-photos.module';
 import { PropertyDocumentsModule } from './property-documents/property-documents.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PropertyDocumentsModule } from './property-documents/property-documents
     DealAnalysesModule,
     PropertyPhotosModule,
     PropertyDocumentsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

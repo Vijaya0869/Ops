@@ -7,6 +7,7 @@ import { TimePeriodProvider } from "@/contexts/TimePeriodContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import Index from "./pages/Index";
 import DashboardPage from "./pages/DashboardPage";
 import OperationsPage from "./pages/OperationsPage";
@@ -69,6 +70,7 @@ const App = () => (
             {/* Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

@@ -1,5 +1,6 @@
 import {
   api,
+  API_URL,
   clearSession,
   getCachedUser,
   getToken,
@@ -63,7 +64,17 @@ export async function signUp(email: string, password: string, fullName: string):
 }
 
 export async function signInWithGoogle(): Promise<void> {
-  // Not implemented on the self-hosted backend yet — was already unconfigured
-  // on the Supabase side too, so this preserves the same (non-)behavior.
-  throw new Error("Google sign-in isn't available yet.");
+  // Full-page redirect into the backend's OAuth flow; it redirects back to
+  // /auth/callback with a token once Google hands control back.
+  window.location.href = `${API_URL}/auth/google`;
+}
+
+export async function completeGoogleSignIn(token: string): Promise<void> {
+  setToken(token);
+  const user = await api.get<AuthUser>("/auth/me");
+  setSession(token, user);
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await api.patch("/auth/me/password", { currentPassword, newPassword });
 }

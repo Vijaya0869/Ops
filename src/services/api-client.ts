@@ -11,6 +11,7 @@ export interface AuthUser {
   fullName?: string | null;
   companyName?: string | null;
   avatarUrl?: string | null;
+  hasPassword?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
