@@ -74,6 +74,13 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 214 32% 91%;
     --sidebar-border: 217 33% 17%;
     --sidebar-ring: 217 91% 60%;
+
+    /* Categorical chart palette — used by category-breakdown pies/bars */
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 291 70% 62%;
+    --chart-5: 199 89% 55%;
   }
 
   /* The app is dark by default; `.dark` mirrors :root so an explicit
@@ -124,6 +131,13 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 214 32% 91%;
     --sidebar-border: 217 33% 17%;
     --sidebar-ring: 217 91% 60%;
+
+    /* Categorical chart palette — used by category-breakdown pies/bars */
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 84% 39%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 291 70% 62%;
+    --chart-5: 199 89% 55%;
   }
 }
 

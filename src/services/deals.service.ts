@@ -92,8 +92,9 @@ export async function updateDeal(id: string, data: Partial<DealFormData>): Promi
   return fromApi(row);
 }
 
-export async function updateDealStage(id: string, stage: DealStage): Promise<void> {
-  await api.patch(`/deals/${id}`, { stage });
+export async function updateDealStage(id: string, stage: DealStage): Promise<Deal> {
+  const row = await api.patch<ApiDeal>(`/deals/${id}`, { stage });
+  return fromApi(row);
 }
 
 export async function deleteDeal(id: string): Promise<void> {

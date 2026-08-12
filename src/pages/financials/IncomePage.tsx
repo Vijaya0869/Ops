@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { TimePeriodDropdown, TimePeriod } from "@/components/ui/time-period-dropdown";
-import { Download, Home, Hammer, FileText, TrendingUp, Loader2 } from "lucide-react";
+import { TimePeriodDropdown } from "@/components/ui/time-period-dropdown";
+import { useTimePeriod, getDateRange } from "@/contexts/TimePeriodContext";
+import { Download, Home, Hammer, FileText, TrendingUp } from "lucide-react";
 import { AddTransactionDialog } from "@/components/financials/AddTransactionDialog";
 import { useIncome } from "@/hooks/useIncome";
 import { useProperties } from "@/hooks/useProperties";
+import {
+  PageHeaderSkeleton,
+  StatCardSkeletonGrid,
+  ChartSkeleton,
+} from "@/components/ui/loading-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORIES = [
   { id: "rental", name: "Rental Income", icon: Home, color: "hsl(var(--primary))" },
@@ -28,7 +35,7 @@ function lastSixMonths(): { key: string; label: string }[] {
 }
 
 export default function IncomePage() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("1month");
+  const { timePeriod, setTimePeriod } = useTimePeriod();
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
 
   const { income, loading: incomeLoading, addIncome } = useIncome();
@@ -36,12 +43,16 @@ export default function IncomePage() {
 
   const loading = incomeLoading || propertiesLoading;
 
+  const { startDate, endDate } = useMemo(() => getDateRange(timePeriod), [timePeriod]);
+
   const propertyAddress = (propertyId: string) =>
     properties.find((p) => p.id === propertyId)?.address || "Unknown property";
 
-  const visibleIncome = income.filter(
-    (i) => selectedProperty === "all" || i.propertyId === selectedProperty,
-  );
+  const visibleIncome = income.filter((i) => {
+    if (selectedProperty !== "all" && i.propertyId !== selectedProperty) return false;
+    const incomeDate = new Date(i.incomeDate);
+    return incomeDate >= startDate && incomeDate <= endDate;
+  });
 
   const categoryTotal = (categoryId: string) =>
     visibleIncome.filter((i) => i.category === categoryId).reduce((sum, i) => sum + i.amount, 0);
@@ -55,7 +66,7 @@ export default function IncomePage() {
     name: c.name,
     value: categoryTotal(c.id),
     color: c.color,
-  }));
+  })).filter((c) => c.value > 0);
 
   const monthlyIncomeData = lastSixMonths().map(({ key, label }) => {
     const [year, month] = key.split("-").map(Number);
@@ -96,8 +107,31 @@ Total Income: $${totalIncome.toLocaleString()}
     return (
       <div className="flex h-screen bg-background">
         <Navigation />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            <PageHeaderSkeleton />
+            <div className="mt-6">
+              <StatCardSkeletonGrid count={4} />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-5 w-40" />
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ChartSkeleton />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-5 w-40" />
+                </CardHeader>
+                <CardContent className="h-[300px]">
+                  <ChartSkeleton />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </main>
       </div>
     );
@@ -160,25 +194,35 @@ Total Income: $${totalIncome.toLocaleString()}
                 <CardTitle>Income Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={chartIncomeData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#818CF8"
-                      dataKey="value"
-                    >
-                      {chartIncomeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `$${Number(value).toLocaleString()}`} />
-                  </PieChart>
-                </ResponsiveContainer>
+                {chartIncomeData.length === 0 ? (
+                  <div className="h-[300px] flex items-center justify-center text-sm text-muted-foreground">
+                    No income recorded in this time period
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={chartIncomeData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        fill="#818CF8"
+                        dataKey="value"
+                      >
+                        {chartIncomeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value, name) => [
+                          `$${Number(value).toLocaleString()} (${((Number(value) / totalIncome) * 100).toFixed(0)}%)`,
+                          name,
+                        ]}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 

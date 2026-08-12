@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building, MapPin, DollarSign, Calendar, Home } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ListRowSkeletonGroup } from "@/components/ui/loading-skeletons";
 import { formatDistanceToNow } from "date-fns";
 
 const statusColors: Record<string, string> = {
@@ -34,11 +34,7 @@ export function PortfolioOverview() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-32 bg-panel" />
-            ))}
-          </div>
+          <ListRowSkeletonGroup count={3} />
         </CardContent>
       </Card>
     );
@@ -58,7 +54,7 @@ export function PortfolioOverview() {
       </CardHeader>
       <CardContent>
         {displayProperties.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-4 animate-in fade-in duration-300">
             {displayProperties.map((property) => (
               <div
                 key={property.id}

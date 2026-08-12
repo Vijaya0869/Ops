@@ -31,7 +31,17 @@ export function DealPipeline() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-48 bg-panel" />
+              <div key={i} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-5 rounded-full" />
+                </div>
+                <div className="space-y-2 p-3 border border-border rounded-lg bg-panel">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              </div>
             ))}
           </div>
         </CardContent>
@@ -60,7 +70,7 @@ export function DealPipeline() {
       </CardHeader>
       <CardContent>
         {activeDeals.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 animate-in fade-in duration-300">
             {stageOrder.map((stage) => (
               <div key={stage} className="space-y-3">
                 <div className="flex items-center justify-between">

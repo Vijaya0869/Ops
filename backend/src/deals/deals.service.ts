@@ -34,11 +34,35 @@ export class DealsService {
   }
 
   async update(userId: string, id: string, dto: UpdateDealDto) {
-    await this.findOne(userId, id);
+    const deal = await this.findOne(userId, id);
     if (dto.propertyId) {
       await assertOwnsProperty(this.prisma, userId, dto.propertyId);
     }
-    return this.prisma.deal.update({ where: { id }, data: dto });
+
+    // Closing a deal that isn't linked to a property yet turns it into one,
+    // so the deal's numbers carry forward instead of vanishing at "closed".
+    let propertyId = dto.propertyId;
+    if (dto.stage === 'closed' && !deal.propertyId && !propertyId) {
+      const property = await this.prisma.property.create({
+        data: {
+          userId,
+          address: deal.address || deal.title,
+          city: deal.city,
+          state: deal.state,
+          purchasePrice: deal.offerPrice ?? deal.askingPrice ?? null,
+          arv: deal.arv,
+          rehabBudget: deal.rehabEstimate,
+          status: 'owned',
+          acquisitionDate: new Date(),
+        },
+      });
+      propertyId = property.id;
+    }
+
+    return this.prisma.deal.update({
+      where: { id },
+      data: { ...dto, ...(propertyId ? { propertyId } : {}) },
+    });
   }
 
   async remove(userId: string, id: string) {

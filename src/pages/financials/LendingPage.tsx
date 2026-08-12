@@ -1,10 +1,15 @@
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, DollarSign, Percent, Calendar, TrendingUp } from "lucide-react";
+import { DollarSign, Percent, Calendar, TrendingUp } from "lucide-react";
 import { useLoans } from "@/hooks/useLoans";
 import { useLenders } from "@/hooks/useLenders";
 import { useProperties } from "@/hooks/useProperties";
+import {
+  StatCardSkeletonGrid,
+  ListRowSkeletonGroup,
+} from "@/components/ui/loading-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statusColors: Record<string, string> = {
   active: "bg-success",
@@ -43,8 +48,22 @@ export default function LendingPage() {
     return (
       <div className="flex h-screen bg-background">
         <Navigation />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-6 space-y-2">
+              <Skeleton className="h-8 w-56" />
+              <Skeleton className="h-4 w-72" />
+            </div>
+            <StatCardSkeletonGrid count={4} className="mb-8" />
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-5 w-16" />
+              </CardHeader>
+              <CardContent>
+                <ListRowSkeletonGroup count={3} />
+              </CardContent>
+            </Card>
+          </div>
         </main>
       </div>
     );

@@ -9,13 +9,13 @@ import {
   Plus, 
   Edit, 
   Trash2, 
-  Bed, 
-  Bath, 
-  Square, 
-  Loader2,
+  Bed,
+  Bath,
+  Square,
   MoreVertical,
   Eye
 } from "lucide-react";
+import { ListRowSkeletonGroup } from "@/components/ui/loading-skeletons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,8 +107,18 @@ export function PropertyList() {
   if (loading) {
     return (
       <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Properties
+          </CardTitle>
+          <Button size="sm" disabled>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Property
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <ListRowSkeletonGroup count={4} />
         </CardContent>
       </Card>
     );
@@ -141,7 +151,7 @@ export function PropertyList() {
               </Button>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-4 animate-in fade-in duration-300">
               {properties.map((property) => (
                 <div
                   key={property.id}

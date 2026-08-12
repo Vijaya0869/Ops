@@ -10,7 +10,7 @@ import { PropertyFormDialog } from "@/components/properties/PropertyFormDialog";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useProperties } from "@/hooks/useProperties";
 import { PropertyFormData } from "@/types/property";
-import { Skeleton } from "@/components/ui/skeleton";
+import { StatCardSkeletonGrid } from "@/components/ui/loading-skeletons";
 import { 
   Building, 
   DollarSign, 
@@ -100,11 +100,7 @@ Deals:
 
           {/* Key Metrics */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-32 bg-panel" />
-              ))}
-            </div>
+            <StatCardSkeletonGrid count={4} className="mb-8" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <MetricCard

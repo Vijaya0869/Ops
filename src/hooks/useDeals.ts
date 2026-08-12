@@ -51,10 +51,17 @@ export function useDeals() {
   };
 
   const updateDeal = async (id: string, data: Partial<DealFormData>) => {
+    const deal = deals.find((d) => d.id === id);
+
     try {
       const updatedDeal = await dealsService.updateDeal(id, data);
       setDeals((prev) => prev.map((d) => (d.id === id ? updatedDeal : d)));
-      toast.success("Deal updated successfully");
+
+      if (deal && !deal.property_id && updatedDeal.property_id) {
+        toast.success(`Property created from "${updatedDeal.title}"`);
+      } else {
+        toast.success("Deal updated successfully");
+      }
       return updatedDeal;
     } catch (error: any) {
       console.error("Error updating deal:", error);
@@ -68,8 +75,12 @@ export function useDeals() {
     const oldStage = deal?.stage;
 
     try {
-      await dealsService.updateDealStage(id, stage);
-      setDeals((prev) => prev.map((d) => (d.id === id ? { ...d, stage } : d)));
+      const updatedDeal = await dealsService.updateDealStage(id, stage);
+      setDeals((prev) => prev.map((d) => (d.id === id ? updatedDeal : d)));
+
+      if (deal && !deal.property_id && updatedDeal.property_id) {
+        toast.success(`Property created from "${deal.title}"`);
+      }
 
       // Send notification for stage change
       if (deal && oldStage && oldStage !== stage) {

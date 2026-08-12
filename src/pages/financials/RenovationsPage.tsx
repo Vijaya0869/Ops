@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { Navigation } from "@/components/Navigation";
 import { RenovationExpenses } from "@/components/financials/RenovationExpenses";
-import { TimePeriodDropdown, TimePeriod } from "@/components/ui/time-period-dropdown";
+import { TimePeriodDropdown } from "@/components/ui/time-period-dropdown";
+import { useTimePeriod, getDateRange } from "@/contexts/TimePeriodContext";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useRenovationItems } from "@/hooks/useRenovationItems";
 
 export default function RenovationsPage() {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("1month");
+  const { timePeriod, setTimePeriod } = useTimePeriod();
   const { projects } = useProjects();
   const { renovationItems } = useRenovationItems();
+  const dateRange = useMemo(() => getDateRange(timePeriod), [timePeriod]);
 
   const downloadRenovationReport = () => {
     const totalBudget = projects.reduce((sum, p) => sum + (p.budget ?? 0), 0);
@@ -78,7 +80,7 @@ Report generated on ${new Date().toLocaleString()}
             </div>
           </div>
 
-          <RenovationExpenses />
+          <RenovationExpenses dateRange={dateRange} />
         </div>
       </main>
     </div>

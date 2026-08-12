@@ -1,13 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TimePeriodDropdown } from "@/components/ui/time-period-dropdown";
-import { useTimePeriod, formatTimePeriodForDisplay } from "@/contexts/TimePeriodContext";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { Download, DollarSign, Home, Hammer, Building, Wrench, Calculator, Loader2 } from "lucide-react";
+import { useTimePeriod, formatTimePeriodForDisplay, getDateRange } from "@/contexts/TimePeriodContext";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { Download, DollarSign, Home, Hammer, Building, Wrench, Calculator } from "lucide-react";
+import {
+  PageHeaderSkeleton,
+  StatCardSkeletonGrid,
+  ChartSkeleton,
+} from "@/components/ui/loading-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AddTransactionDialog } from "@/components/financials/AddTransactionDialog";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useProperties } from "@/hooks/useProperties";
@@ -37,12 +43,18 @@ export default function ExpensesPage() {
 
   const loading = expensesLoading || propertiesLoading || renovationLoading || projectsLoading;
 
+  const { startDate, endDate } = useMemo(() => getDateRange(timePeriod), [timePeriod]);
+
   const propertyAddress = (propertyId: string) =>
     properties.find((p) => p.id === propertyId)?.address || "Unknown property";
 
-  const visibleExpenses = expenses.filter(
-    (e) => selectedProperty === "all" || e.propertyId === selectedProperty,
-  );
+  const visibleExpenses = expenses.filter((e) => {
+    if (selectedProperty !== "all" && e.propertyId !== selectedProperty) return false;
+    const expenseDate = new Date(e.expenseDate);
+    return expenseDate >= startDate && expenseDate <= endDate;
+  });
+  // Renovation items have no date of their own (only their parent project does),
+  // so they're only filtered by property here, not by the time period.
   const visibleRenovationItems = renovationItems.filter(
     (r) => selectedProperty === "all" || r.propertyId === selectedProperty,
   );
@@ -63,6 +75,7 @@ export default function ExpensesPage() {
   );
 
   const chartData = CATEGORIES.map((c) => ({ name: c.name, value: categoryTotal(c.id), fill: c.color }));
+  const pieChartData = chartData.filter((c) => c.value > 0);
 
   const downloadReport = () => {
     const reportContent = `Expense Analysis Report - ${formatTimePeriodForDisplay(timePeriod)}
@@ -191,8 +204,29 @@ Total Expenses: $${totalExpenses.toLocaleString()}
     return (
       <div className="flex h-screen bg-background">
         <Navigation />
-        <main className="flex-1 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <PageHeaderSkeleton />
+            <StatCardSkeletonGrid count={3} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-5 w-40" />
+                </CardHeader>
+                <CardContent className="h-80">
+                  <ChartSkeleton />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-5 w-40" />
+                </CardHeader>
+                <CardContent className="h-80">
+                  <ChartSkeleton />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </main>
       </div>
     );
@@ -274,25 +308,35 @@ Total Expenses: $${totalExpenses.toLocaleString()}
               </CardHeader>
               <CardContent>
                 <div className="h-80">
+                  {pieChartData.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                      No expenses recorded in this time period
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={chartData}
+                        data={pieChartData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
+                        outerRadius={90}
                         fill="#818CF8"
                         dataKey="value"
                       >
-                        {chartData.map((entry, index) => (
+                        {pieChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, "Amount"]} />
+                      <Tooltip
+                        formatter={(value: number, name) => [
+                          `$${value.toLocaleString()} (${((value / totalExpenses) * 100).toFixed(0)}%)`,
+                          name,
+                        ]}
+                      />
+                      <Legend />
                     </PieChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
               </CardContent>
             </Card>
