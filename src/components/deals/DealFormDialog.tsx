@@ -23,7 +23,7 @@ interface DealFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   deal?: Deal | null;
-  onSubmit: (data: Partial<DealFormData>) => Promise<any>;
+  onSubmit: (data: Partial<DealFormData>) => Promise<Deal | null>;
 }
 
 const stageOptions: { value: DealStage; label: string }[] = [

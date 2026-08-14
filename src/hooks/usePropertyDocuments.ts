@@ -43,11 +43,11 @@ export function usePropertyDocuments(propertyId: string | null) {
       });
 
       return doc;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error uploading document:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to upload document",
+        description: error instanceof Error ? error.message : "Failed to upload document",
         variant: "destructive",
       });
       return null;

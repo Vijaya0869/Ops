@@ -43,9 +43,9 @@ export function useDeals() {
       setDeals((prev) => [newDeal, ...prev]);
       toast.success("Deal added successfully");
       return newDeal;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error adding deal:", error);
-      toast.error(error.message || "Failed to add deal");
+      toast.error(error instanceof Error ? error.message : "Failed to add deal");
       return null;
     }
   };
@@ -63,9 +63,9 @@ export function useDeals() {
         toast.success("Deal updated successfully");
       }
       return updatedDeal;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating deal:", error);
-      toast.error(error.message || "Failed to update deal");
+      toast.error(error instanceof Error ? error.message : "Failed to update deal");
       return null;
     }
   };

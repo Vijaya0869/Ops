@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeals } from "@/hooks/useDeals";
 import { DealFormDialog } from "./DealFormDialog";
-import { Deal, DealStage } from "@/types/deal";
+import { Deal, DealFormData, DealStage } from "@/types/deal";
 import {
   Plus,
   MoreVertical,
@@ -72,7 +72,7 @@ export function DealsPipelineBoard() {
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Partial<DealFormData>) => {
     if (selectedDeal) {
       return await updateDeal(selectedDeal.id, data);
     }

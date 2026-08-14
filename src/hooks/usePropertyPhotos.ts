@@ -43,11 +43,11 @@ export function usePropertyPhotos(propertyId: string | null) {
       });
 
       return photo;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error uploading photo:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to upload photo",
+        description: error instanceof Error ? error.message : "Failed to upload photo",
         variant: "destructive",
       });
       return null;

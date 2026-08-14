@@ -6,6 +6,7 @@ import {
   Target, Users, Building2, CalendarDays, GitBranch, ClipboardList,
   LayoutDashboard, FileText, TrendingUp, Home, DollarSign, UserPlus,
   MessageSquare, Shield, Compass, Award, Trophy, Lightbulb,
+  type LucideIcon,
 } from "lucide-react";
 import { ExecutiveScorecard } from "./ExecutiveScorecard";
 
@@ -19,7 +20,7 @@ const Section = ({
   title,
   children,
 }: {
-  icon: any;
+  icon: LucideIcon;
   number: number;
   title: string;
   children: React.ReactNode;

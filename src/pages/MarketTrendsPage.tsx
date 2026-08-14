@@ -1,8 +1,7 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { ArrowUp, ArrowDown, Minus, ExternalLink } from "lucide-react";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -28,7 +27,7 @@ const economicIndicators = [
   { indicator: "Net Migration", source: "USPS/U-Haul", current: "+1.2%", lastMonth: "+1.0%", trend: "up", impact: "positive" },
 ];
 
-const strategyMatrix = [
+const strategyMatrix: { condition: string; marketType: string; strategy: string; color: BadgeProps["variant"] }[] = [
   { condition: "Inventory ↑ + DOM ↑ + Price cuts ↑", marketType: "Cooling", strategy: "Sell/Wholesale fast; pause new flips", color: "destructive" },
   { condition: "Prices flat + DOM stable + Rents steady", marketType: "Balanced", strategy: "Focus on rentals/refi", color: "secondary" },
   { condition: "Prices ↑ + DOM ↓ + Inventory ↓", marketType: "Expansion", strategy: "Acquire aggressively; full rehabs", color: "default" },
@@ -65,9 +64,7 @@ const getMetricColor = (value: number, metric: string) => {
 
 export default function MarketTrendsPage() {
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
-      <main className="flex-1 p-6">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground">Market Trend Tracker</h1>
@@ -290,7 +287,7 @@ export default function MarketTrendsPage() {
                     <div key={idx} className="border rounded-lg p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-lg">{item.condition}</h3>
-                        <Badge variant={item.color as any}>{item.marketType}</Badge>
+                        <Badge variant={item.color}>{item.marketType}</Badge>
                       </div>
                       <p className="text-muted-foreground">{item.strategy}</p>
                     </div>
@@ -329,6 +326,5 @@ export default function MarketTrendsPage() {
           </Tabs>
         </div>
       </main>
-    </div>
   );
 }
