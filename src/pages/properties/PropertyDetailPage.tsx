@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +82,7 @@ export default function PropertyDetailPage() {
       }
 
       setProperty(data);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching property:", error);
       toast({
         title: "Error",
@@ -107,7 +106,7 @@ export default function PropertyDetailPage() {
         description: "Property updated successfully",
       });
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating property:", error);
       toast({
         title: "Error",
@@ -131,31 +130,28 @@ export default function PropertyDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen bg-background">
-        <Navigation />
-        <main className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex items-start gap-4">
-                <Skeleton className="h-10 w-10 rounded-md" />
-                <div className="space-y-2">
-                  <Skeleton className="h-7 w-64" />
-                  <Skeleton className="h-4 w-40" />
-                </div>
+      <main className="flex-1 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-start gap-4">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-7 w-64" />
+                <Skeleton className="h-4 w-40" />
               </div>
-              <Skeleton className="h-9 w-32" />
             </div>
-
-            <Skeleton className="mb-6 h-64 w-full rounded-xl" />
-
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <StatTileSkeleton key={i} />
-              ))}
-            </div>
+            <Skeleton className="h-9 w-32" />
           </div>
-        </main>
-      </div>
+
+          <Skeleton className="mb-6 h-64 w-full rounded-xl" />
+
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <StatTileSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </main>
     );
   }
 
@@ -182,8 +178,7 @@ export default function PropertyDetailPage() {
     : 0;
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
+    <>
       <main className="flex-1 p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -548,6 +543,6 @@ export default function PropertyDetailPage() {
         property={property}
         onSubmit={handleUpdate}
       />
-    </div>
+    </>
   );
 }

@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { FinancialDrilldown, type DrilldownItem } from "@/components/financials/FinancialDrilldown";
 import { useIncome } from "@/hooks/useIncome";
 import { useExpenses } from "@/hooks/useExpenses";
@@ -73,10 +72,7 @@ const DrilldownPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -96,7 +92,6 @@ const DrilldownPage = () => {
           )}
         </div>
       </main>
-    </div>
   );
 };
 

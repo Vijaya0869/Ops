@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -48,10 +47,7 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -323,7 +319,6 @@ const SettingsPage = () => {
           </div>
         </div>
       </main>
-    </div>
   );
 };
 

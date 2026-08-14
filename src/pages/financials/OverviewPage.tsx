@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -37,10 +36,7 @@ Total Equity: $${metrics.totalEquity.toLocaleString()}
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -191,6 +187,5 @@ Total Equity: $${metrics.totalEquity.toLocaleString()}
           )}
         </div>
       </main>
-    </div>
   );
 }

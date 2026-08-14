@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -17,10 +16,7 @@ import {
 
 const LenderSelectionSOPPage = () => {
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-5xl mx-auto space-y-6">
           {/* Header */}
           <div className="mb-8">
@@ -531,7 +527,6 @@ const LenderSelectionSOPPage = () => {
           </Card>
         </div>
       </main>
-    </div>
   );
 };
 

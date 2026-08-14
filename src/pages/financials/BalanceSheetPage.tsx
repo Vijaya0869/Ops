@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { BalanceSheet } from "@/components/financials/BalanceSheet";
 
 export default function BalanceSheetPage() {
@@ -12,10 +11,7 @@ export default function BalanceSheetPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground">Balance Sheet</h1>
@@ -25,6 +21,5 @@ export default function BalanceSheetPage() {
           <BalanceSheet financialData={financialData} />
         </div>
       </main>
-    </div>
   );
 }

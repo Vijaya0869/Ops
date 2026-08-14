@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,10 +86,7 @@ const PlaybooksPage = () => {
   }, [searchQuery]);
 
   return (
-    <div className="flex min-h-screen purple-gradient">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="mb-8">
@@ -203,7 +199,6 @@ const PlaybooksPage = () => {
           </Card>
         </div>
       </main>
-    </div>
   );
 };
 

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { CashPosition } from "@/components/financials/CashPosition";
 import { TimePeriodDropdown, TimePeriod } from "@/components/ui/time-period-dropdown";
 import { Button } from "@/components/ui/button";
@@ -17,10 +16,7 @@ export default function CashPositionPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -42,6 +38,5 @@ export default function CashPositionPage() {
           <CashPosition existingFinancials={existingFinancials} />
         </div>
       </main>
-    </div>
   );
 }

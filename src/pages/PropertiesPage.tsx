@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,9 +40,7 @@ const PropertiesPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Navigation />
-      
+    <>
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between mb-8">
@@ -278,7 +275,7 @@ const PropertiesPage = () => {
         onOpenChange={setIsFormOpen}
         onSubmit={handleCreateProperty}
       />
-    </div>
+    </>
   );
 };
 

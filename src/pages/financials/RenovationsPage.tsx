@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Navigation } from "@/components/Navigation";
 import { RenovationExpenses } from "@/components/financials/RenovationExpenses";
 import { TimePeriodDropdown } from "@/components/ui/time-period-dropdown";
 import { useTimePeriod, getDateRange } from "@/contexts/TimePeriodContext";
@@ -61,10 +60,7 @@ Report generated on ${new Date().toLocaleString()}
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -83,6 +79,5 @@ Report generated on ${new Date().toLocaleString()}
           <RenovationExpenses dateRange={dateRange} />
         </div>
       </main>
-    </div>
   );
 }

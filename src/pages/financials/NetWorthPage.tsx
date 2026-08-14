@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { NetWorth } from "@/components/financials/NetWorth";
 import { Button } from "@/components/ui/button";
 import { TimePeriodDropdown } from "@/components/ui/time-period-dropdown";
@@ -49,10 +48,7 @@ Report generated for period: ${formatTimePeriodForDisplay(timePeriod)}
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -76,6 +72,5 @@ Report generated for period: ${formatTimePeriodForDisplay(timePeriod)}
           <NetWorth financialData={financialData} />
         </div>
       </main>
-    </div>
   );
 }

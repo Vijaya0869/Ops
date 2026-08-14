@@ -5,9 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TimePeriodProvider } from "@/contexts/TimePeriodContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AppLayout } from "@/components/layout/AppLayout";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import Index from "./pages/Index";
 import DashboardPage from "./pages/DashboardPage";
 import OperationsPage from "./pages/OperationsPage";
@@ -71,54 +74,58 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
-            <Route path="/home" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/operations" element={<ProtectedRoute><OperationsPage /></ProtectedRoute>} />
-            {/* Operations sub-routes */}
-            <Route path="/operations/acquisitions" element={<ProtectedRoute><AcquisitionsPage /></ProtectedRoute>} />
-            <Route path="/operations/disposition" element={<ProtectedRoute><DispositionPage /></ProtectedRoute>} />
-            <Route path="/operations/rentals" element={<ProtectedRoute><RentalsPage /></ProtectedRoute>} />
-            <Route path="/operations/construction" element={<ProtectedRoute><ConstructionPage /></ProtectedRoute>} />
-            <Route path="/operations/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-            <Route path="/operations/lender-management" element={<ProtectedRoute><LenderManagementPage /></ProtectedRoute>} />
-            <Route path="/deals" element={<ProtectedRoute><DealsPage /></ProtectedRoute>} />
-            <Route path="/deals/pipeline" element={<ProtectedRoute><PipelinePage /></ProtectedRoute>} />
-            <Route path="/deals/decision-matrix" element={<ProtectedRoute><DecisionMatrixPage /></ProtectedRoute>} />
-            <Route path="/properties" element={<ProtectedRoute><PropertiesPage /></ProtectedRoute>} />
-            <Route path="/properties/portfolio" element={<ProtectedRoute><PortfolioPage /></ProtectedRoute>} />
-            <Route path="/properties/:id" element={<ProtectedRoute><PropertyDetailPage /></ProtectedRoute>} />
-            <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
-            <Route path="/financials" element={<ProtectedRoute><FinancialsPage /></ProtectedRoute>} />
-            {/* Financial sub-routes */}
-            <Route path="/financials/overview" element={<ProtectedRoute><OverviewPage /></ProtectedRoute>} />
-            <Route path="/financials/income" element={<ProtectedRoute><IncomePage /></ProtectedRoute>} />
-            <Route path="/financials/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
-            <Route path="/financials/rentals" element={<ProtectedRoute><RentalsFinancialsPage /></ProtectedRoute>} />
-            <Route path="/financials/lending" element={<ProtectedRoute><LendingPage /></ProtectedRoute>} />
-            <Route path="/financials/cash-position" element={<ProtectedRoute><CashPositionPage /></ProtectedRoute>} />
-            <Route path="/financials/cash-forecast" element={<ProtectedRoute><CashForecastPage /></ProtectedRoute>} />
-            <Route path="/financials/balance-sheet" element={<ProtectedRoute><BalanceSheetPage /></ProtectedRoute>} />
-            <Route path="/financials/profit-loss" element={<ProtectedRoute><ProfitLossPage /></ProtectedRoute>} />
-            <Route path="/financials/net-worth" element={<ProtectedRoute><NetWorthPage /></ProtectedRoute>} />
-            <Route path="/financials/renovations" element={<ProtectedRoute><RenovationsPage /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-            <Route path="/market-trends" element={<ProtectedRoute><MarketTrendsPage /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            {/* Playbooks routes */}
-            <Route path="/playbooks" element={<ProtectedRoute><PlaybooksPage /></ProtectedRoute>} />
-            <Route path="/playbooks/acquisitions" element={<ProtectedRoute><AcquisitionsSOPPage /></ProtectedRoute>} />
-            <Route path="/playbooks/disposition" element={<ProtectedRoute><DispositionSOPPage /></ProtectedRoute>} />
-            <Route path="/playbooks/lender-selection" element={<ProtectedRoute><LenderSelectionSOPPage /></ProtectedRoute>} />
-            <Route path="/playbooks/construction-project" element={<ProtectedRoute><ConstructionProjectSOPPage /></ProtectedRoute>} />
-            <Route path="/playbooks/contractors-materials" element={<ProtectedRoute><ContractorsMaterialsSOPPage /></ProtectedRoute>} />
-            <Route path="/playbooks/tenant-placement" element={<ProtectedRoute><TenantPlacementSOPPage /></ProtectedRoute>} />
-            <Route path="/playbooks/gc-management" element={<ProtectedRoute><GCManagementPage /></ProtectedRoute>} />
-            <Route path="/playbooks/project-management" element={<ProtectedRoute><ProjectManagementPage /></ProtectedRoute>} />
-            <Route path="/playbooks/construction" element={<ProtectedRoute><ConstructionSOPsPage /></ProtectedRoute>} />
-            <Route path="/playbooks/cost-control" element={<ProtectedRoute><CostControlPage /></ProtectedRoute>} />
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/home" element={<Index />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/operations" element={<OperationsPage />} />
+              {/* Operations sub-routes */}
+              <Route path="/operations/acquisitions" element={<AcquisitionsPage />} />
+              <Route path="/operations/disposition" element={<DispositionPage />} />
+              <Route path="/operations/rentals" element={<RentalsPage />} />
+              <Route path="/operations/construction" element={<ConstructionPage />} />
+              <Route path="/operations/admin" element={<AdminPage />} />
+              <Route path="/operations/lender-management" element={<LenderManagementPage />} />
+              <Route path="/deals" element={<DealsPage />} />
+              <Route path="/deals/pipeline" element={<PipelinePage />} />
+              <Route path="/deals/decision-matrix" element={<DecisionMatrixPage />} />
+              <Route path="/properties" element={<PropertiesPage />} />
+              <Route path="/properties/portfolio" element={<PortfolioPage />} />
+              <Route path="/properties/:id" element={<PropertyDetailPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/financials" element={<FinancialsPage />} />
+              {/* Financial sub-routes */}
+              <Route path="/financials/overview" element={<OverviewPage />} />
+              <Route path="/financials/income" element={<IncomePage />} />
+              <Route path="/financials/expenses" element={<ExpensesPage />} />
+              <Route path="/financials/rentals" element={<RentalsFinancialsPage />} />
+              <Route path="/financials/lending" element={<LendingPage />} />
+              <Route path="/financials/cash-position" element={<CashPositionPage />} />
+              <Route path="/financials/cash-forecast" element={<CashForecastPage />} />
+              <Route path="/financials/balance-sheet" element={<BalanceSheetPage />} />
+              <Route path="/financials/profit-loss" element={<ProfitLossPage />} />
+              <Route path="/financials/net-worth" element={<NetWorthPage />} />
+              <Route path="/financials/renovations" element={<RenovationsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/market-trends" element={<MarketTrendsPage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              {/* Playbooks routes */}
+              <Route path="/playbooks" element={<PlaybooksPage />} />
+              <Route path="/playbooks/acquisitions" element={<AcquisitionsSOPPage />} />
+              <Route path="/playbooks/disposition" element={<DispositionSOPPage />} />
+              <Route path="/playbooks/lender-selection" element={<LenderSelectionSOPPage />} />
+              <Route path="/playbooks/construction-project" element={<ConstructionProjectSOPPage />} />
+              <Route path="/playbooks/contractors-materials" element={<ContractorsMaterialsSOPPage />} />
+              <Route path="/playbooks/tenant-placement" element={<TenantPlacementSOPPage />} />
+              <Route path="/playbooks/gc-management" element={<GCManagementPage />} />
+              <Route path="/playbooks/project-management" element={<ProjectManagementPage />} />
+              <Route path="/playbooks/construction" element={<ConstructionSOPsPage />} />
+              <Route path="/playbooks/cost-control" element={<CostControlPage />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

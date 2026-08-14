@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -202,9 +201,7 @@ Total Expenses: $${totalExpenses.toLocaleString()}
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Navigation />
-        <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-7xl mx-auto space-y-6">
             <PageHeaderSkeleton />
             <StatCardSkeletonGrid count={3} />
@@ -228,15 +225,11 @@ Total Expenses: $${totalExpenses.toLocaleString()}
             </div>
           </div>
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex justify-between items-start">
@@ -411,6 +404,5 @@ Total Expenses: $${totalExpenses.toLocaleString()}
           </Card>
         </div>
       </main>
-    </div>
   );
 }

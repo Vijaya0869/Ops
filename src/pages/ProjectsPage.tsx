@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -73,10 +72,7 @@ const ProjectsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -270,7 +266,6 @@ const ProjectsPage = () => {
           </Tabs>
         </div>
       </main>
-    </div>
   );
 };
 

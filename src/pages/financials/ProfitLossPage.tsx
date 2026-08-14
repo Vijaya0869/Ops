@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { ProfitLoss } from "@/components/financials/ProfitLoss";
 import { useIncome } from "@/hooks/useIncome";
 import { useExpenses } from "@/hooks/useExpenses";
@@ -37,10 +36,7 @@ export default function ProfitLossPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground">Profit & Loss Statement</h1>
@@ -56,6 +52,5 @@ export default function ProfitLossPage() {
           )}
         </div>
       </main>
-    </div>
   );
 }

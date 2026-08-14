@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { CashFlowForecast } from "@/components/financials/CashFlowForecast";
 
 export default function CashForecastPage() {
@@ -12,10 +11,7 @@ export default function CashForecastPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground">Cash Flow Forecast</h1>
@@ -25,6 +21,5 @@ export default function CashForecastPage() {
           <CashFlowForecast existingFinancials={existingFinancials} />
         </div>
       </main>
-    </div>
   );
 }

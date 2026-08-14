@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -105,9 +104,7 @@ Total Income: $${totalIncome.toLocaleString()}
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Navigation />
-        <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-7xl mx-auto">
             <PageHeaderSkeleton />
             <div className="mt-6">
@@ -133,15 +130,11 @@ Total Income: $${totalIncome.toLocaleString()}
             </div>
           </div>
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -296,6 +289,5 @@ Total Income: $${totalIncome.toLocaleString()}
           </Card>
         </div>
       </main>
-    </div>
   );
 }

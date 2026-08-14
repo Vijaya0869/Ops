@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -192,20 +191,14 @@ const FinancialsPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen">
-        <Navigation />
-        <main className="flex-1 flex items-center justify-center">
+      <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -676,7 +669,6 @@ const FinancialsPage = () => {
           </Tabs>
         </div>
       </main>
-    </div>
   );
 };
 

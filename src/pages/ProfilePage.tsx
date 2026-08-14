@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,9 +156,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex min-h-screen purple-gradient">
-      <Navigation />
-      <main className="flex-1 p-8 overflow-auto">
+    <main className="flex-1 p-8 overflow-auto">
         <div className="max-w-2xl mx-auto space-y-6">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Profile</h1>
@@ -411,6 +408,5 @@ export default function ProfilePage() {
           )}
         </div>
       </main>
-    </div>
   );
 }

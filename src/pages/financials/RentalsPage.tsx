@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Home, DollarSign, TrendingUp, Calendar, Loader2 } from "lucide-react";
@@ -38,20 +37,14 @@ export default function RentalsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Navigation />
-        <main className="flex-1 flex items-center justify-center">
+      <main className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground">Rental Portfolio</h1>
@@ -188,6 +181,5 @@ export default function RentalsPage() {
           </Card>
         </div>
       </main>
-    </div>
   );
 }

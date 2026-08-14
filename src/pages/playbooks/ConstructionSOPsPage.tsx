@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -15,10 +14,7 @@ const ConstructionSOPsPage = () => {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-5xl mx-auto space-y-8">
           {/* Header */}
           <div className="mb-8">
@@ -131,7 +127,6 @@ const ConstructionSOPsPage = () => {
           </Card>
         </div>
       </main>
-    </div>
   );
 };
 

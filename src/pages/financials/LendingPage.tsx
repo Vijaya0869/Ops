@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Percent, Calendar, TrendingUp } from "lucide-react";
@@ -46,9 +45,7 @@ export default function LendingPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-background">
-        <Navigation />
-        <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 p-6 overflow-auto">
           <div className="max-w-7xl mx-auto">
             <div className="mb-6 space-y-2">
               <Skeleton className="h-8 w-56" />
@@ -65,15 +62,11 @@ export default function LendingPage() {
             </Card>
           </div>
         </main>
-      </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Navigation />
-
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-foreground">Lending & Loans</h1>
@@ -203,6 +196,5 @@ export default function LendingPage() {
           </Card>
         </div>
       </main>
-    </div>
   );
 }

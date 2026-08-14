@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
 import { TimePeriodDropdown, TimePeriod } from "@/components/ui/time-period-dropdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioPerformance } from "@/components/analytics/PortfolioPerformance";
@@ -35,10 +34,7 @@ This comprehensive analytics report includes:
   };
 
   return (
-    <div className="flex min-h-screen purple-gradient">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="mb-6 flex items-center justify-between">
@@ -85,7 +81,6 @@ This comprehensive analytics report includes:
           </Tabs>
         </div>
       </main>
-    </div>
   );
 };
 

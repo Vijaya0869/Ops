@@ -1,4 +1,3 @@
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +25,14 @@ interface CategoryPricing {
 
 interface PricingProfiles {
   [category: string]: CategoryPricing;
+}
+
+// Shape of every leaf field in inspectionData (propertyDetails, bedrooms.*,
+// smokeDetectors.*, and every other flat category all use this same shape).
+interface InspectionField {
+  value: string;
+  status: string;
+  needsRepair: boolean;
 }
 
 // Pricing Profile Data from CMH filled spreadsheet
@@ -485,7 +492,7 @@ const DocumentsPage = () => {
       if (category === 'bedrooms') {
         // Handle bedroom structure
         Object.entries(items).forEach(([bedroomKey, bedroomData]) => {
-          Object.entries(bedroomData as any).forEach(([item, data]: [string, any]) => {
+          Object.entries(bedroomData as Record<string, InspectionField>).forEach(([item, data]) => {
             if (data.needsRepair) {
               const pricing = getPricingForTask(category, item);
               const taskName = `${bedroomKey} - ${item.replace(/([A-Z])/g, ' $1').trim()}`;
@@ -505,7 +512,7 @@ const DocumentsPage = () => {
       } else if (category === 'smokeDetectors') {
         // Handle smoke detectors structure
         Object.entries(items).forEach(([detectorKey, detectorData]) => {
-          Object.entries(detectorData as any).forEach(([item, data]: [string, any]) => {
+          Object.entries(detectorData as Record<string, InspectionField>).forEach(([item, data]) => {
             if (data.needsRepair) {
               const pricing = getPricingForTask(category, item);
               const taskName = `${detectorKey} - ${item.replace(/([A-Z])/g, ' $1').trim()}`;
@@ -524,7 +531,7 @@ const DocumentsPage = () => {
         });
       } else if (category !== 'propertyDetails') {
         // Handle regular flat structure
-        Object.entries(items as any).forEach(([item, data]: [string, any]) => {
+        Object.entries(items as Record<string, InspectionField>).forEach(([item, data]) => {
           if (data.needsRepair) {
             const pricing = getPricingForTask(category, item);
             const taskName = `${category} - ${item.replace(/([A-Z])/g, ' $1').trim()}`;
@@ -626,10 +633,7 @@ const DocumentsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="flex-1 p-6 overflow-auto">
+    <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -740,7 +744,7 @@ const DocumentsPage = () => {
                                  {bedroomKey.replace(/([A-Z])/g, ' $1').trim()}
                                </h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {Object.entries(bedroomData as any).map(([item, data]: [string, any]) => (
+                                {Object.entries(bedroomData as Record<string, InspectionField>).map(([item, data]) => (
                                   <div key={item} className="flex items-center justify-between p-3 border rounded-lg">
                                     <div className="flex-1 space-y-3">
                                       <Label className="capitalize font-medium text-sm">
@@ -757,7 +761,7 @@ const DocumentsPage = () => {
                                                 bedrooms: {
                                                   ...prev.bedrooms,
                                                   [bedroomKey]: {
-                                                    ...(prev.bedrooms as any)[bedroomKey],
+                                                    ...(prev.bedrooms as Record<string, Record<string, InspectionField>>)[bedroomKey],
                                                     [item]: { ...data, status: value, needsRepair }
                                                   }
                                                 }
@@ -786,7 +790,7 @@ const DocumentsPage = () => {
                                                 bedrooms: {
                                                   ...prev.bedrooms,
                                                   [bedroomKey]: {
-                                                    ...(prev.bedrooms as any)[bedroomKey],
+                                                    ...(prev.bedrooms as Record<string, Record<string, InspectionField>>)[bedroomKey],
                                                     [item]: { ...data, needsRepair: checked }
                                                   }
                                                 }
@@ -810,7 +814,7 @@ const DocumentsPage = () => {
                             <div key={detectorKey} className="space-y-4">
                               <h4 className="text-md font-medium uppercase text-foreground">{detectorKey}</h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                {Object.entries(detectorData as any).map(([item, data]: [string, any]) => (
+                                {Object.entries(detectorData as Record<string, InspectionField>).map(([item, data]) => (
                                   <div key={item} className="flex items-center justify-between p-3 border rounded-lg">
                                     <div className="flex-1 space-y-3">
                                       <Label className="capitalize font-medium text-sm">
@@ -827,7 +831,7 @@ const DocumentsPage = () => {
                                                 smokeDetectors: {
                                                   ...prev.smokeDetectors,
                                                   [detectorKey]: {
-                                                    ...(prev.smokeDetectors as any)[detectorKey],
+                                                    ...(prev.smokeDetectors as Record<string, Record<string, InspectionField>>)[detectorKey],
                                                     [item]: { ...data, status: value, needsRepair }
                                                   }
                                                 }
@@ -856,7 +860,7 @@ const DocumentsPage = () => {
                                                 smokeDetectors: {
                                                   ...prev.smokeDetectors,
                                                   [detectorKey]: {
-                                                    ...(prev.smokeDetectors as any)[detectorKey],
+                                                    ...(prev.smokeDetectors as Record<string, Record<string, InspectionField>>)[detectorKey],
                                                     [item]: { ...data, needsRepair: checked }
                                                   }
                                                 }
@@ -1448,7 +1452,6 @@ const DocumentsPage = () => {
           </Tabs>
         </div>
       </main>
-    </div>
   );
 };
 
