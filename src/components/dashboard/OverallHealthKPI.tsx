@@ -19,7 +19,7 @@ interface OverallHealthKPIProps {
 }
 
 export function OverallHealthKPI({ timePeriod }: OverallHealthKPIProps) {
-  const { metrics, loading } = useDashboardData();
+  const { metrics, loading } = useDashboardData(timePeriod);
 
   if (loading) {
     return (
@@ -47,17 +47,17 @@ export function OverallHealthKPI({ timePeriod }: OverallHealthKPIProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Acquisitions"
-            value={metrics.totalAcquisitions}
+            value={metrics.periodTotalAcquisitions}
             icon={ShoppingCart}
-            change={metrics.totalAcquisitions > 0 ? "Active portfolio" : "No properties yet"}
-            changeType={metrics.totalAcquisitions > 0 ? "positive" : "neutral"}
+            change={metrics.periodTotalAcquisitions > 0 ? "Acquired in period" : "None in period"}
+            changeType={metrics.periodTotalAcquisitions > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Total Dispositions"
-            value={metrics.totalDispositions}
+            value={metrics.periodTotalDispositions}
             icon={TrendingUp}
-            change={metrics.totalDispositions > 0 ? "Properties sold" : "None sold yet"}
-            changeType={metrics.totalDispositions > 0 ? "positive" : "neutral"}
+            change={metrics.periodTotalDispositions > 0 ? "Sold in period" : "None sold in period"}
+            changeType={metrics.periodTotalDispositions > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Active Rentals"
@@ -96,10 +96,10 @@ export function OverallHealthKPI({ timePeriod }: OverallHealthKPIProps) {
           />
           <MetricCard
             title="Average ROI"
-            value={`${metrics.averageROI.toFixed(1)}%`}
+            value={`${metrics.periodAverageROI.toFixed(1)}%`}
             icon={Target}
-            change={metrics.averageROI > 15 ? "Above target" : "Building portfolio"}
-            changeType={metrics.averageROI > 0 ? "positive" : "neutral"}
+            change={metrics.periodAverageROI > 15 ? "Above target" : "Building portfolio"}
+            changeType={metrics.periodAverageROI > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Occupancy Rate"

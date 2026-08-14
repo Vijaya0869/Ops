@@ -5,6 +5,8 @@ import { useLoans } from "./useLoans";
 import { Property } from "@/types/property";
 import { Deal } from "@/types/deal";
 import { currentDebtForProperty } from "@/lib/loan-utils";
+import { TimePeriod } from "@/components/ui/time-period-dropdown";
+import { getDateRange, getPeriodYearFraction } from "@/contexts/TimePeriodContext";
 
 export interface DashboardMetrics {
   // Operations
@@ -29,7 +31,21 @@ export interface DashboardMetrics {
   grossProfitMargin: number;
   netProfitMargin: number;
   cashFlow: number;
-  
+
+  // Financial, scoped to the selected time period (same figures as above
+  // when no period is passed in). Recurring rent/expenses are prorated to
+  // the period length; sale profit and ROI are filtered to sales that
+  // closed within the period.
+  periodTotalIncome: number;
+  periodTotalExpenses: number;
+  periodGrossProfit: number;
+  periodNetProfit: number;
+  periodGrossProfitMargin: number;
+  periodNetProfitMargin: number;
+  periodAverageROI: number;
+  periodTotalAcquisitions: number;
+  periodTotalDispositions: number;
+
   // Deals
   totalLeads: number;
   underContract: number;
@@ -59,7 +75,7 @@ export interface DashboardMetrics {
   rentalProperties: Property[];
 }
 
-export function useDashboardData() {
+export function useDashboardData(timePeriod?: TimePeriod) {
   const { properties, loading: propertiesLoading } = useProperties();
   const { deals, isLoading: dealsLoading } = useDeals();
   const { loans, loading: loansLoading } = useLoans();
@@ -182,6 +198,53 @@ export function useDashboardData() {
         }, 0) / propertiesWithROI.length
       : 0;
 
+    // Period-scoped figures: recurring rent/expenses are prorated to the
+    // selected period's length (a week's worth vs a year's worth of the
+    // same monthly rate); sale profit and ROI only count sales that
+    // actually closed within the period, since those are lumpy, dated
+    // events rather than a recurring rate. Falls back to the all-time
+    // figures above when no period is given, so existing callers are
+    // unaffected.
+    const yearFraction = timePeriod ? getPeriodYearFraction(timePeriod) : 1;
+
+    const periodIncome = monthlyRentIncome * 12 * yearFraction;
+    const periodExpenses = monthlyExpenses * 12 * yearFraction;
+
+    const isWithinPeriod = (dateStr: string | null | undefined) => {
+      if (!timePeriod || !dateStr) return !timePeriod;
+      const { startDate, endDate } = getDateRange(timePeriod);
+      const d = new Date(dateStr);
+      return d >= startDate && d <= endDate;
+    };
+
+    const periodSalesProfit = soldProperties
+      .filter(p => isWithinPeriod(p.sale_date))
+      .reduce((sum, p) => {
+        const profit = (p.sale_price || 0) - (p.purchase_price || 0) - (p.actual_rehab_cost || p.rehab_budget || 0) - (p.holding_costs || 0);
+        return sum + profit;
+      }, 0);
+
+    const periodTotalIncome = periodIncome + periodSalesProfit;
+    const periodTotalExpenses = periodExpenses;
+    const periodGrossProfit = periodTotalIncome - periodTotalExpenses;
+    const periodNetProfit = periodGrossProfit * 0.7;
+    const periodGrossProfitMargin = periodIncome > 0 ? (periodGrossProfit / periodIncome) * 100 : 0;
+    const periodNetProfitMargin = periodIncome > 0 ? (periodNetProfit / periodIncome) * 100 : 0;
+
+    const periodPropertiesWithROI = propertiesWithROI.filter(p => isWithinPeriod(p.sale_date));
+    const periodAverageROI = periodPropertiesWithROI.length > 0
+      ? periodPropertiesWithROI.reduce((sum, p) => {
+          const investment = (p.purchase_price || 0) + (p.actual_rehab_cost || p.rehab_budget || 0);
+          const profit = (p.sale_price || 0) - investment;
+          return investment > 0 ? sum + (profit / investment * 100) : sum;
+        }, 0) / periodPropertiesWithROI.length
+      : 0;
+
+    // Acquisitions/dispositions scoped to properties actually acquired or
+    // sold within the period, vs. the all-time counts above.
+    const periodTotalAcquisitions = acquisitions.filter(p => isWithinPeriod(p.acquisition_date)).length;
+    const periodTotalDispositions = soldProperties.filter(p => isWithinPeriod(p.sale_date)).length;
+
     return {
       // Operations
       totalAcquisitions: acquisitions.length,
@@ -205,7 +268,17 @@ export function useDashboardData() {
       grossProfitMargin: annualIncome > 0 ? (grossProfit / annualIncome) * 100 : 0,
       netProfitMargin: annualIncome > 0 ? (netProfit / annualIncome) * 100 : 0,
       cashFlow: monthlyRentIncome - monthlyExpenses,
-      
+
+      periodTotalIncome,
+      periodTotalExpenses,
+      periodGrossProfit,
+      periodNetProfit,
+      periodGrossProfitMargin,
+      periodNetProfitMargin,
+      periodAverageROI,
+      periodTotalAcquisitions,
+      periodTotalDispositions,
+
       // Deals
       totalLeads: leadDeals.length + analyzingDeals.length,
       underContract: underContractDeals.length,
@@ -229,7 +302,7 @@ export function useDashboardData() {
       activeConstructionProperties: constructionProperties,
       rentalProperties,
     };
-  }, [properties, deals, loans]);
+  }, [properties, deals, loans, timePeriod]);
 
   return {
     metrics,

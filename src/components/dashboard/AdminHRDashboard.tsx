@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { TimePeriod } from "@/components/ui/time-period-dropdown";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { getPeriodYearFraction } from "@/contexts/TimePeriodContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, DollarSign, Calendar, FileText, Building, TrendingUp } from "lucide-react";
 
@@ -10,7 +11,7 @@ interface AdminHRDashboardProps {
 }
 
 export function AdminHRDashboard({ timePeriod }: AdminHRDashboardProps) {
-  const { metrics, loading } = useDashboardData();
+  const { metrics, loading } = useDashboardData(timePeriod);
 
   if (loading) {
     return (
@@ -25,11 +26,14 @@ export function AdminHRDashboard({ timePeriod }: AdminHRDashboardProps) {
     );
   }
 
-  // Calculate admin metrics based on portfolio data
-  const estimatedSalaries = Math.max(metrics.totalProperties * 2000, 8000); // Estimate based on portfolio size
-  const estimatedOfficeExpenses = Math.max(metrics.totalProperties * 500, 2000);
-  const estimatedSubscriptions = 1500 + (metrics.totalProperties * 100);
-  const estimatedSupplies = 500 + (metrics.totalProperties * 50);
+  // Calculate admin metrics based on portfolio data. These are estimated
+  // monthly rates, prorated to the selected time period (a week's worth
+  // vs a year's worth of the same monthly estimate).
+  const periodFraction = getPeriodYearFraction(timePeriod) * 12;
+  const estimatedSalaries = Math.max(metrics.totalProperties * 2000, 8000) * periodFraction;
+  const estimatedOfficeExpenses = Math.max(metrics.totalProperties * 500, 2000) * periodFraction;
+  const estimatedSubscriptions = (1500 + (metrics.totalProperties * 100)) * periodFraction;
+  const estimatedSupplies = (500 + (metrics.totalProperties * 50)) * periodFraction;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
@@ -52,7 +56,7 @@ export function AdminHRDashboard({ timePeriod }: AdminHRDashboardProps) {
             title="Office Expenses"
             value={formatCurrency(estimatedOfficeExpenses)}
             icon={DollarSign}
-            change="Monthly estimate"
+            change="Estimate for period"
             changeType="neutral"
           />
           <MetricCard
@@ -66,7 +70,7 @@ export function AdminHRDashboard({ timePeriod }: AdminHRDashboardProps) {
             title="Office Supplies"
             value={formatCurrency(estimatedSupplies)}
             icon={FileText}
-            change="Monthly spend"
+            change="Estimate for period"
             changeType="neutral"
           />
         </div>

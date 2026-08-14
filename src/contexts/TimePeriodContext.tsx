@@ -54,6 +54,14 @@ export function getDateRange(period: TimePeriod): { startDate: Date; endDate: Da
   return { startDate, endDate };
 }
 
+// Portion of a year the period spans, for prorating recurring monthly
+// figures (e.g. a monthly rent rate shown over "1 week" vs "1 year").
+export function getPeriodYearFraction(period: TimePeriod): number {
+  const { startDate, endDate } = getDateRange(period);
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.max(endDate.getTime() - startDate.getTime(), msPerDay) / (365 * msPerDay);
+}
+
 // Utility function to format period for display
 export function formatTimePeriodForDisplay(period: TimePeriod): string {
   const { startDate, endDate } = getDateRange(period);

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useDashboardData } from "./useDashboardData";
 import { currentDebtForProperty, annualDebtService } from "@/lib/loan-utils";
+import { TimePeriod } from "@/components/ui/time-period-dropdown";
 
 const OWNED_STATUSES = ["owned", "in_rehab", "listed", "rental"];
 
@@ -19,8 +20,8 @@ export interface PortfolioReturns {
  * directly. Centralized here since multiple financials pages show the
  * same figures (Overview, the top-level Financials dashboard).
  */
-export function usePortfolioReturns() {
-  const { metrics, properties, loans, deals, loading } = useDashboardData();
+export function usePortfolioReturns(timePeriod?: TimePeriod) {
+  const { metrics, properties, loans, deals, loading } = useDashboardData(timePeriod);
 
   const derived = useMemo<PortfolioReturns>(() => {
     const annualCashFlow = metrics.cashFlow * 12;

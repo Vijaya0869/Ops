@@ -10,7 +10,7 @@ import { DollarSign, TrendingUp, Percent, Download, TrendingDown, PiggyBank, Tar
 
 export default function OverviewPage() {
   const { timePeriod, setTimePeriod } = useTimePeriod();
-  const { metrics, derived, loading } = usePortfolioReturns();
+  const { metrics, derived, loading } = usePortfolioReturns(timePeriod);
 
   const handleDownload = () => {
     const reportContent = `Financial Overview Report - ${timePeriod}
@@ -19,10 +19,10 @@ export default function OverviewPage() {
 Generated on: ${new Date().toLocaleDateString()}
 Time Period: ${formatTimePeriodForDisplay(timePeriod)}
 
-Total Income: $${metrics.totalIncome.toLocaleString()}
-Total Expenses: $${metrics.totalExpenses.toLocaleString()}
-Gross Profit: $${metrics.grossProfit.toLocaleString()}
-Net Profit: $${metrics.netProfit.toLocaleString()}
+Total Income: $${metrics.periodTotalIncome.toLocaleString()}
+Total Expenses: $${metrics.periodTotalExpenses.toLocaleString()}
+Gross Profit: $${metrics.periodGrossProfit.toLocaleString()}
+Net Profit: $${metrics.periodNetProfit.toLocaleString()}
 Portfolio Value: $${metrics.portfolioValue.toLocaleString()}
 Total Equity: $${metrics.totalEquity.toLocaleString()}
 `;
@@ -67,28 +67,28 @@ Total Equity: $${metrics.totalEquity.toLocaleString()}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   <MetricCard
                     title="Total Income"
-                    value={`$${(metrics.totalIncome / 1000).toFixed(0)}K`}
+                    value={`$${(metrics.periodTotalIncome / 1000).toFixed(0)}K`}
                     icon={DollarSign}
-                    change="Rental income + realized sale profit"
+                    change={`Rental income + sales, ${formatTimePeriodForDisplay(timePeriod)}`}
                     changeType="neutral"
                   />
                   <MetricCard
                     title="Total Expenses"
-                    value={`$${(metrics.totalExpenses / 1000).toFixed(0)}K`}
+                    value={`$${(metrics.periodTotalExpenses / 1000).toFixed(0)}K`}
                     icon={TrendingDown}
-                    change="Annualized rental expenses"
+                    change={`Rental expenses, ${formatTimePeriodForDisplay(timePeriod)}`}
                     changeType="neutral"
                   />
                   <MetricCard
                     title="Gross Profit"
-                    value={`$${(metrics.grossProfit / 1000).toFixed(0)}K`}
+                    value={`$${(metrics.periodGrossProfit / 1000).toFixed(0)}K`}
                     icon={TrendingUp}
-                    change={metrics.grossProfit >= 0 ? "Positive" : "Negative"}
-                    changeType={metrics.grossProfit >= 0 ? "positive" : "negative"}
+                    change={metrics.periodGrossProfit >= 0 ? "Positive" : "Negative"}
+                    changeType={metrics.periodGrossProfit >= 0 ? "positive" : "negative"}
                   />
                   <MetricCard
                     title="Net Profit"
-                    value={`$${(metrics.netProfit / 1000).toFixed(0)}K`}
+                    value={`$${(metrics.periodNetProfit / 1000).toFixed(0)}K`}
                     icon={PiggyBank}
                     change="After estimated taxes/other (30%)"
                     changeType="neutral"
@@ -102,24 +102,24 @@ Total Equity: $${metrics.totalEquity.toLocaleString()}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   <MetricCard
                     title="Gross Profit Margin"
-                    value={`${metrics.grossProfitMargin.toFixed(1)}%`}
+                    value={`${metrics.periodGrossProfitMargin.toFixed(1)}%`}
                     icon={Percent}
                     change="Gross profit / income"
                     changeType="neutral"
                   />
                   <MetricCard
                     title="Net Profit Margin"
-                    value={`${metrics.netProfitMargin.toFixed(1)}%`}
+                    value={`${metrics.periodNetProfitMargin.toFixed(1)}%`}
                     icon={Calculator}
                     change="Net profit / income"
                     changeType="neutral"
                   />
                   <MetricCard
                     title="Return on Investment"
-                    value={`${metrics.averageROI.toFixed(1)}%`}
+                    value={`${metrics.periodAverageROI.toFixed(1)}%`}
                     icon={Target}
-                    change={metrics.averageROI > 0 ? "From sold properties" : "No sales yet"}
-                    changeType={metrics.averageROI > 0 ? "positive" : "neutral"}
+                    change={metrics.periodAverageROI > 0 ? `Sold ${formatTimePeriodForDisplay(timePeriod)}` : "No sales in period"}
+                    changeType={metrics.periodAverageROI > 0 ? "positive" : "neutral"}
                   />
                   <MetricCard
                     title="Return on Equity"

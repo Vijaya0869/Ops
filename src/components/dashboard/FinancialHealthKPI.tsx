@@ -19,7 +19,7 @@ interface FinancialHealthKPIProps {
 }
 
 export function FinancialHealthKPI({ timePeriod }: FinancialHealthKPIProps) {
-  const { metrics, loading } = useDashboardData();
+  const { metrics, loading } = useDashboardData(timePeriod);
 
   if (loading) {
     return (
@@ -56,31 +56,31 @@ export function FinancialHealthKPI({ timePeriod }: FinancialHealthKPIProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Income"
-            value={formatCurrency(metrics.totalIncome)}
+            value={formatCurrency(metrics.periodTotalIncome)}
             icon={DollarSign}
-            change={metrics.totalIncome > 0 ? "Annual income" : "No income yet"}
-            changeType={metrics.totalIncome > 0 ? "positive" : "neutral"}
+            change={metrics.periodTotalIncome > 0 ? "Income in period" : "No income yet"}
+            changeType={metrics.periodTotalIncome > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Total Expenses"
-            value={formatCurrency(metrics.totalExpenses)}
+            value={formatCurrency(metrics.periodTotalExpenses)}
             icon={TrendingDown}
-            change={metrics.totalExpenses > 0 ? "Annual expenses" : "No expenses"}
+            change={metrics.periodTotalExpenses > 0 ? "Expenses in period" : "No expenses"}
             changeType="neutral"
           />
           <MetricCard
             title="Gross Profit"
-            value={formatCurrency(metrics.grossProfit)}
+            value={formatCurrency(metrics.periodGrossProfit)}
             icon={TrendingUp}
-            change={metrics.grossProfit > 0 ? "Profitable" : "Building portfolio"}
-            changeType={metrics.grossProfit > 0 ? "positive" : "neutral"}
+            change={metrics.periodGrossProfit > 0 ? "Profitable" : "Building portfolio"}
+            changeType={metrics.periodGrossProfit > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Net Profit"
-            value={formatCurrency(metrics.netProfit)}
+            value={formatCurrency(metrics.periodNetProfit)}
             icon={PiggyBank}
-            change={metrics.netProfit > 0 ? "After taxes est." : "Building"}
-            changeType={metrics.netProfit > 0 ? "positive" : "neutral"}
+            change={metrics.periodNetProfit > 0 ? "After taxes est." : "Building"}
+            changeType={metrics.periodNetProfit > 0 ? "positive" : "neutral"}
           />
         </div>
       </div>
@@ -91,24 +91,24 @@ export function FinancialHealthKPI({ timePeriod }: FinancialHealthKPIProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Gross Profit Margin"
-            value={`${metrics.grossProfitMargin.toFixed(1)}%`}
+            value={`${metrics.periodGrossProfitMargin.toFixed(1)}%`}
             icon={Percent}
-            change={metrics.grossProfitMargin > 30 ? "Strong margin" : "Building"}
-            changeType={metrics.grossProfitMargin > 0 ? "positive" : "neutral"}
+            change={metrics.periodGrossProfitMargin > 30 ? "Strong margin" : "Building"}
+            changeType={metrics.periodGrossProfitMargin > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Net Profit Margin"
-            value={`${metrics.netProfitMargin.toFixed(1)}%`}
+            value={`${metrics.periodNetProfitMargin.toFixed(1)}%`}
             icon={Calculator}
-            change={metrics.netProfitMargin > 20 ? "Excellent" : "Growing"}
-            changeType={metrics.netProfitMargin > 0 ? "positive" : "neutral"}
+            change={metrics.periodNetProfitMargin > 20 ? "Excellent" : "Growing"}
+            changeType={metrics.periodNetProfitMargin > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Return on Investment"
-            value={`${metrics.averageROI.toFixed(1)}%`}
+            value={`${metrics.periodAverageROI.toFixed(1)}%`}
             icon={Target}
-            change={metrics.averageROI > 15 ? "Above target" : "Building"}
-            changeType={metrics.averageROI > 0 ? "positive" : "neutral"}
+            change={metrics.periodAverageROI > 15 ? "Above target" : "Building"}
+            changeType={metrics.periodAverageROI > 0 ? "positive" : "neutral"}
           />
           <MetricCard
             title="Cash on Cash Return"

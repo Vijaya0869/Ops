@@ -22,7 +22,7 @@ import {
 const Index = () => {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("1month");
   const [isPropertyFormOpen, setIsPropertyFormOpen] = useState(false);
-  const { metrics, loading } = useDashboardData();
+  const { metrics, loading } = useDashboardData(timePeriod);
   const { addProperty } = useProperties();
 
   const handleDownload = () => {
@@ -37,13 +37,13 @@ Portfolio Summary:
 - Portfolio Value: $${metrics.portfolioValue.toLocaleString()}
 - Total Equity: $${metrics.totalEquity.toLocaleString()}
 - Monthly Cash Flow: $${metrics.cashFlow.toLocaleString()}
-- Average ROI: ${metrics.averageROI.toFixed(1)}%
+- Average ROI: ${metrics.periodAverageROI.toFixed(1)}%
 
 Operations:
 - Active Rentals: ${metrics.activeRentals}
 - Construction Projects: ${metrics.constructionProjects}
-- Total Acquisitions: ${metrics.totalAcquisitions}
-- Total Dispositions: ${metrics.totalDispositions}
+- Total Acquisitions: ${metrics.periodTotalAcquisitions}
+- Total Dispositions: ${metrics.periodTotalDispositions}
 
 Deals:
 - Active Leads: ${metrics.totalLeads}
@@ -109,10 +109,10 @@ Deals:
               />
               <MetricCard
                 title="Average ROI"
-                value={`${metrics.averageROI.toFixed(1)}%`}
+                value={`${metrics.periodAverageROI.toFixed(1)}%`}
                 icon={TrendingUp}
-                change={metrics.averageROI > 0 ? "From sold properties" : "No sales yet"}
-                changeType={metrics.averageROI > 0 ? "positive" : "neutral"}
+                change={metrics.periodAverageROI > 0 ? "From sold properties" : "No sales in period"}
+                changeType={metrics.periodAverageROI > 0 ? "positive" : "neutral"}
               />
               <MetricCard
                 title="Total Properties"
