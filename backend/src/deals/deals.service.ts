@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertOwnsProperty } from '../common/ownership.util';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
 
 @Injectable()
 export class DealsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findAll(userId: string) {
     return this.prisma.deal.findMany({
@@ -30,7 +34,11 @@ export class DealsService {
     if (dto.propertyId) {
       await assertOwnsProperty(this.prisma, userId, dto.propertyId);
     }
-    return this.prisma.deal.create({ data: { ...dto, userId } });
+    const deal = await this.prisma.deal.create({ data: { ...dto, userId } });
+    await this.notifications.notifyEvent(userId, 'new_deal', {
+      dealTitle: deal.title,
+    });
+    return deal;
   }
 
   async update(userId: string, id: string, dto: UpdateDealDto) {
@@ -59,10 +67,20 @@ export class DealsService {
       propertyId = property.id;
     }
 
-    return this.prisma.deal.update({
+    const updated = await this.prisma.deal.update({
       where: { id },
       data: { ...dto, ...(propertyId ? { propertyId } : {}) },
     });
+
+    if (dto.stage && dto.stage !== deal.stage) {
+      await this.notifications.notifyEvent(userId, 'deal_stage_change', {
+        dealTitle: deal.title,
+        oldStage: deal.stage,
+        newStage: dto.stage,
+      });
+    }
+
+    return updated;
   }
 
   async remove(userId: string, id: string) {

@@ -15,6 +15,13 @@ datasource db {
 // Enums
 // ---------------------------------------------------------------------------
 
+enum NotificationEventType {
+  deal_stage_change
+  property_sold
+  property_acquired
+  new_deal
+}
+
 enum PropertyStatus {
   lead
   under_contract
@@ -85,6 +92,9 @@ model User {
   avatarUrl               String?   @map("avatar_url")
   passwordResetTokenHash  String?   @map("password_reset_token_hash")
   passwordResetExpiresAt  DateTime? @map("password_reset_expires_at")
+  emailNotificationEvents NotificationEventType[] @default([]) @map("email_notification_events")
+  slackNotificationEvents NotificationEventType[] @default([]) @map("slack_notification_events")
+  slackWebhookUrl         String?   @map("slack_webhook_url")
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
 

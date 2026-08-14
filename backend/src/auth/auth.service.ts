@@ -32,6 +32,9 @@ const PROFILE_SELECT = {
   companyName: true,
   avatarUrl: true,
   passwordHash: true,
+  emailNotificationEvents: true,
+  slackNotificationEvents: true,
+  slackWebhookUrl: true,
   createdAt: true,
   updatedAt: true,
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,16 +7,64 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { 
-  Bell, 
-  DollarSign, 
-  Percent, 
-  Calculator, 
+import { useAuth } from "@/hooks/useAuth";
+import * as profilesService from "@/services/profiles.service";
+import {
+  Bell,
+  DollarSign,
+  Percent,
+  Calculator,
   Building2,
-  Save
+  Save,
+  Loader2
 } from "lucide-react";
 
+const NOTIFICATION_EVENTS = [
+  { value: "new_deal", label: "New Deal Created", description: "When a new deal is added to your pipeline" },
+  { value: "deal_stage_change", label: "Deal Stage Changed", description: "When one of your deals moves to a new stage" },
+  { value: "property_sold", label: "Property Sold", description: "When one of your properties is marked sold" },
+  { value: "property_acquired", label: "Property Acquired", description: "When you acquire a new property" },
+] as const;
+
 const SettingsPage = () => {
+  const { user } = useAuth();
+  const [emailEvents, setEmailEvents] = useState<string[]>([]);
+  const [slackEvents, setSlackEvents] = useState<string[]>([]);
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [savingNotifications, setSavingNotifications] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setEmailEvents(user.emailNotificationEvents || []);
+    setSlackEvents(user.slackNotificationEvents || []);
+    setSlackWebhookUrl(user.slackWebhookUrl || "");
+  }, [user]);
+
+  const toggleEvent = (
+    channel: "email" | "slack",
+    event: string,
+    enabled: boolean
+  ) => {
+    const setter = channel === "email" ? setEmailEvents : setSlackEvents;
+    setter((prev) => (enabled ? [...prev, event] : prev.filter((e) => e !== event)));
+  };
+
+  const handleSaveNotifications = async () => {
+    setSavingNotifications(true);
+    try {
+      await profilesService.upsertProfile({
+        email_notification_events: emailEvents,
+        slack_notification_events: slackEvents,
+        slack_webhook_url: slackWebhookUrl.trim() || null,
+      });
+      toast.success("Notification settings saved");
+    } catch (error) {
+      console.error("Error saving notification settings:", error);
+      toast.error("Failed to save notification settings");
+    } finally {
+      setSavingNotifications(false);
+    }
+  };
   // Deal Analysis Preferences
   const [defaultMinROI, setDefaultMinROI] = useState("15");
   const [defaultMinSpread, setDefaultMinSpread] = useState("25000");
@@ -29,12 +77,6 @@ const SettingsPage = () => {
   const [defaultClosingCosts, setDefaultClosingCosts] = useState("3");
   const [defaultSellingCosts, setDefaultSellingCosts] = useState("8");
   const [currency, setCurrency] = useState("USD");
-
-  // Notification Preferences
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [dealAlerts, setDealAlerts] = useState(true);
-  const [paymentReminders, setPaymentReminders] = useState(true);
-  const [weeklyReports, setWeeklyReports] = useState(false);
 
   // Display Preferences
   const [defaultView, setDefaultView] = useState("dashboard");
@@ -205,7 +247,7 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
 
-          {/* Notification Preferences */}
+          {/* Notification Settings */}
           <Card variant="glass">
             <CardHeader>
               <div className="flex items-center gap-3">
@@ -213,44 +255,76 @@ const SettingsPage = () => {
                   <Bell className="h-5 w-5 text-accent-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-foreground">Notifications</CardTitle>
+                  <CardTitle className="text-foreground">Notification Settings</CardTitle>
                   <CardDescription className="text-muted-foreground">
-                    Manage how you receive updates
+                    Choose which updates on your own data you want to be notified about
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-foreground">Email Notifications</Label>
-                  <p className="text-xs text-muted-foreground">Receive updates via email</p>
-                </div>
-                <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
+              <div className="grid grid-cols-[1fr,auto,auto] items-center gap-x-6 gap-y-1">
+                <span />
+                <span className="text-xs font-semibold text-muted-foreground text-center">Email</span>
+                <span className="text-xs font-semibold text-muted-foreground text-center">Slack</span>
+
+                {NOTIFICATION_EVENTS.map((event, index) => (
+                  <div className="contents" key={event.value}>
+                    <div className={index > 0 ? "pt-4" : undefined}>
+                      <Label className="text-foreground">{event.label}</Label>
+                      <p className="text-xs text-muted-foreground">{event.description}</p>
+                    </div>
+                    <div className={`flex justify-center ${index > 0 ? "pt-4" : ""}`}>
+                      <Switch
+                        checked={emailEvents.includes(event.value)}
+                        onCheckedChange={(checked) => toggleEvent("email", event.value, checked)}
+                      />
+                    </div>
+                    <div className={`flex justify-center ${index > 0 ? "pt-4" : ""}`}>
+                      <Switch
+                        checked={slackEvents.includes(event.value)}
+                        onCheckedChange={(checked) => toggleEvent("slack", event.value, checked)}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
+
               <Separator className="bg-panel" />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-foreground">Deal Alerts</Label>
-                  <p className="text-xs text-muted-foreground">Get notified about deal stage changes</p>
-                </div>
-                <Switch checked={dealAlerts} onCheckedChange={setDealAlerts} />
+
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="slackWebhookUrl" className="text-foreground">Slack Webhook URL</Label>
+                <Input
+                  id="slackWebhookUrl"
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={slackWebhookUrl}
+                  onChange={(e) => setSlackWebhookUrl(e.target.value)}
+                  className="bg-panel border-border text-foreground"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional — if set, the events above are also posted to this Slack channel. Create one at{" "}
+                  <a
+                    href="https://api.slack.com/apps"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent underline"
+                  >
+                    api.slack.com/apps
+                  </a>{" "}
+                  → your app → Incoming Webhooks.
+                </p>
               </div>
-              <Separator className="bg-panel" />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-foreground">Payment Reminders</Label>
-                  <p className="text-xs text-muted-foreground">Reminders for lender payments due</p>
-                </div>
-                <Switch checked={paymentReminders} onCheckedChange={setPaymentReminders} />
-              </div>
-              <Separator className="bg-panel" />
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-foreground">Weekly Reports</Label>
-                  <p className="text-xs text-muted-foreground">Receive weekly portfolio summary</p>
-                </div>
-                <Switch checked={weeklyReports} onCheckedChange={setWeeklyReports} />
+
+              <div className="flex justify-end pt-2">
+                <Button variant="gold" onClick={handleSaveNotifications} disabled={savingNotifications}>
+                  {savingNotifications ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Notification Settings
+                </Button>
               </div>
             </CardContent>
           </Card>

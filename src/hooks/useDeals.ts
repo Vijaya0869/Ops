@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Deal, DealFormData, DealStage } from "@/types/deal";
 import { toast } from "sonner";
-import { sendDealStageNotification } from "@/lib/notifications";
 import { useAuth } from "./useAuth";
 import * as dealsService from "@/services/deals.service";
 
@@ -72,7 +71,6 @@ export function useDeals() {
 
   const updateDealStage = async (id: string, stage: DealStage) => {
     const deal = deals.find((d) => d.id === id);
-    const oldStage = deal?.stage;
 
     try {
       const updatedDeal = await dealsService.updateDealStage(id, stage);
@@ -80,15 +78,6 @@ export function useDeals() {
 
       if (deal && !deal.property_id && updatedDeal.property_id) {
         toast.success(`Property created from "${deal.title}"`);
-      }
-
-      // Send notification for stage change
-      if (deal && oldStage && oldStage !== stage) {
-        sendDealStageNotification({
-          dealTitle: deal.title,
-          oldStage,
-          newStage: stage,
-        });
       }
     } catch (error) {
       console.error("Error updating deal stage:", error);

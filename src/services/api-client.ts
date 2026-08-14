@@ -12,6 +12,9 @@ export interface AuthUser {
   companyName?: string | null;
   avatarUrl?: string | null;
   hasPassword?: boolean;
+  emailNotificationEvents?: string[];
+  slackNotificationEvents?: string[];
+  slackWebhookUrl?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

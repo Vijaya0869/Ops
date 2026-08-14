@@ -1,9 +1,10 @@
 import { IsIn, IsOptional, IsString } from 'class-validator';
 
-export type NotificationType = 'deal_stage_change' | 'property_milestone';
+export type NotificationType =
+  'deal_stage_change' | 'property_milestone' | 'new_deal';
 
 export class SendNotificationDto {
-  @IsIn(['deal_stage_change', 'property_milestone'])
+  @IsIn(['deal_stage_change', 'property_milestone', 'new_deal'])
   type: NotificationType;
 
   @IsOptional()
