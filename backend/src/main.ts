@@ -7,7 +7,15 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.enableCors({ origin: true, credentials: true });
+  // Reflecting any origin (origin: true) would let any website make
+  // credentialed requests on a signed-in user's behalf. Only the
+  // configured frontend (plus local dev ports) may call this API.
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:8080',
+    'http://localhost:5173',
+  ].filter((origin): origin is string => Boolean(origin));
+  app.enableCors({ origin: allowedOrigins, credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const swaggerConfig = new DocumentBuilder()
