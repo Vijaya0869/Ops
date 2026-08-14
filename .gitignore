@@ -18,6 +18,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Internal working notes — kept locally, not tracked
+SESSION-NOTES*.md
+TRACKER.csv
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
