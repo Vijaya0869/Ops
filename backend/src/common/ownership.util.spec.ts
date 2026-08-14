@@ -40,7 +40,9 @@ describe('ownership.util', () => {
     describe(`assertOwns${label}`, () => {
       it('resolves without throwing when the record belongs to the user', async () => {
         const prisma = mockPrisma({ id: 'record-1', userId: 'user-1' }, model);
-        await expect(assertFn(prisma, 'user-1', 'record-1')).resolves.toBeUndefined();
+        await expect(
+          assertFn(prisma, 'user-1', 'record-1'),
+        ).resolves.toBeUndefined();
       });
 
       it('throws BadRequestException when the record does not exist', async () => {
@@ -51,7 +53,10 @@ describe('ownership.util', () => {
       });
 
       it('throws ForbiddenException when the record belongs to a different user', async () => {
-        const prisma = mockPrisma({ id: 'record-1', userId: 'someone-else' }, model);
+        const prisma = mockPrisma(
+          { id: 'record-1', userId: 'someone-else' },
+          model,
+        );
         await expect(assertFn(prisma, 'user-1', 'record-1')).rejects.toThrow(
           ForbiddenException,
         );

@@ -36,9 +36,7 @@ const PROFILE_SELECT = {
   updatedAt: true,
 };
 
-function formatProfile<T extends { passwordHash: string | null }>(
-  user: T,
-) {
+function formatProfile<T extends { passwordHash: string | null }>(user: T) {
   const { passwordHash, ...rest } = user;
   return { ...rest, hasPassword: passwordHash !== null };
 }
