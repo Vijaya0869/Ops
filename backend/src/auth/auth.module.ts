@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 // Google sign-in is optional until GOOGLE_CLIENT_ID/SECRET are configured —
 // skip registering the strategy rather than crash the whole app on boot.
@@ -14,6 +15,7 @@ const googleProviders = process.env.GOOGLE_CLIENT_ID ? [GoogleStrategy] : [];
 @Module({
   imports: [
     PassportModule,
+    NotificationsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -78,3 +78,11 @@ export async function completeGoogleSignIn(token: string): Promise<void> {
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   await api.patch("/auth/me/password", { currentPassword, newPassword });
 }
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await api.post("/auth/forgot-password", { email });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await api.post("/auth/reset-password", { token, newPassword });
+}

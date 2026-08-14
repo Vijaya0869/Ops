@@ -25,17 +25,28 @@ export class NotificationsService {
 
   async send(recipient: Recipient, dto: SendNotificationDto) {
     const { subject, html } = this.render(recipient, dto);
+    await this.deliver(recipient.email, subject, html);
+  }
 
+  async sendPasswordReset(email: string, resetUrl: string) {
+    await this.deliver(
+      email,
+      'Reset your password',
+      `<p>Hi,</p><p>Click the link below to reset your password. This link expires in 1 hour.</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can ignore this email.</p>`,
+    );
+  }
+
+  private async deliver(to: string, subject: string, html: string) {
     if (!this.resend) {
       this.logger.log(
-        `Email skipped (no RESEND_API_KEY configured): to=${recipient.email} subject="${subject}"`,
+        `Email skipped (no RESEND_API_KEY configured): to=${to} subject="${subject}"`,
       );
       return;
     }
 
     const { error } = await this.resend.emails.send({
       from: this.fromEmail,
-      to: recipient.email,
+      to,
       subject,
       html,
     });
@@ -45,7 +56,7 @@ export class NotificationsService {
     // unchecked call silently "succeeds" even when nothing was sent.
     if (error) {
       this.logger.error(
-        `Resend rejected email to=${recipient.email}: ${error.name} — ${error.message}`,
+        `Resend rejected email to=${to}: ${error.name} — ${error.message}`,
       );
     }
   }
